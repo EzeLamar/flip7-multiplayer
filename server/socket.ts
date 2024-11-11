@@ -7,11 +7,15 @@ import { GameState, Card, Player } from "@/lib/types";
 const NEXT_URL = process.env.NEXT_PUBLIC_SOCKET_URL || "http://localhost:3000";
 const SOCKET_URL =
   process.env.NEXT_PUBLIC_SOCKET_URL || "http://localhost:3001";
+const PORT = SOCKET_URL.split(":")[2];
 
-const httpServer = createServer();
+const httpServer = createServer((req, res) => {
+  res.writeHead(200, { "Content-Type": "text/html" });
+  res.end("<h1>Socket.IO server for Flip7</h1>");
+});
 const io = new Server(httpServer, {
   cors: {
-    origin: NEXT_URL,
+    origin: "*", //Enable CORS for Testing
     methods: ["GET", "POST"],
   },
 });
@@ -292,6 +296,6 @@ function reshuffleDeck(game: GameState) {
   game.discardPile = [topCard];
 }
 
-httpServer.listen(3001, () => {
-  console.log(`Socket.IO server running on ${SOCKET_URL}`);
+httpServer.listen(PORT, () => {
+  console.log(`Socket.IO server running on port ${PORT}`);
 });
