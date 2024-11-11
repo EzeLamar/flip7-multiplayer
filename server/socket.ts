@@ -72,12 +72,20 @@ io.on("connection", (socket) => {
 
     game.players.push(player);
     socket.join(gameId);
-    io.to(gameId).emit("playerJoined", { gameState: game });
+    // io.to(gameId).emit("playerJoined", { gameState: game });
 
-    if (game.players.length >= 2) {
-      game.status = "ready";
-      io.to(gameId).emit("gameReady", { gameState: game });
-    }
+    // if (game.players.length >= 2) {
+    //   game.status = "ready";
+    //   io.to(gameId).emit("gameReady", { gameState: game });
+    // }
+
+    // Update the gameState object to include the new player's information
+    const updatedGameState = {
+      ...game,
+      players: game.players,
+    };
+
+    io.to(gameId).emit("gameStateUpdated", { gameState: updatedGameState });
   });
 
   socket.on("startGame", (gameId: string) => {
