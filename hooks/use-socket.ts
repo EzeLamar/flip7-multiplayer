@@ -1,42 +1,45 @@
 "use client";
 
-import { useEffect, useState } from 'react';
-import { io, Socket } from 'socket.io-client';
-import { GameState } from '@/lib/types';
-import { toast } from 'sonner';
+import { useEffect, useState } from "react";
+import { io, Socket } from "socket.io-client";
+import { GameState } from "@/lib/types";
+import { toast } from "sonner";
 
 export function useSocket() {
   const [socket, setSocket] = useState<Socket | null>(null);
   const [gameState, setGameState] = useState<GameState | null>(null);
 
+  const SOCKET_URL =
+    process.env.NEXT_PUBLIC_SOCKET_URL || "http://localhost:3001";
+
   useEffect(() => {
-    const newSocket = io('http://localhost:3001');
+    const newSocket = io(SOCKET_URL);
     setSocket(newSocket);
 
-    newSocket.on('gameCreated', ({ gameState }) => {
+    newSocket.on("gameCreated", ({ gameState }) => {
       setGameState(gameState);
       toast.success(`Game created! Share code: ${gameState.id}`);
     });
 
-    newSocket.on('playerJoined', ({ gameState }) => {
+    newSocket.on("playerJoined", ({ gameState }) => {
       setGameState(gameState);
-      toast.success('New player joined!');
+      toast.success("New player joined!");
     });
 
-    newSocket.on('gameStarted', ({ gameState }) => {
+    newSocket.on("gameStarted", ({ gameState }) => {
       setGameState(gameState);
-      toast.success('Game started!');
+      toast.success("Game started!");
     });
 
-    newSocket.on('gameStateUpdated', ({ gameState }) => {
+    newSocket.on("gameStateUpdated", ({ gameState }) => {
       setGameState(gameState);
     });
 
-    newSocket.on('gameOver', ({ winner }) => {
+    newSocket.on("gameOver", ({ winner }) => {
       toast.success(`Game Over! ${winner.name} wins!`);
     });
 
-    newSocket.on('error', (message) => {
+    newSocket.on("error", (message) => {
       toast.error(message);
     });
 
@@ -46,15 +49,15 @@ export function useSocket() {
   }, []);
 
   const createGame = (playerName: string) => {
-    socket?.emit('createGame', playerName);
+    socket?.emit("createGame", playerName);
   };
 
   const joinGame = (gameId: string, playerName: string) => {
-    socket?.emit('joinGame', { gameId, playerName });
+    socket?.emit("joinGame", { gameId, playerName });
   };
 
   const startGame = (gameId: string) => {
-    socket?.emit('startGame', gameId);
+    socket?.emit("startGame", gameId);
   };
 
   return {

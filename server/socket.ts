@@ -1,11 +1,17 @@
+import dotenv from "dotenv";
+dotenv.config();
 import { Server } from "socket.io";
 import { createServer } from "http";
 import { GameState, Card, Player } from "@/lib/types";
 
+const NEXT_URL = process.env.NEXT_PUBLIC_SOCKET_URL || "http://localhost:3000";
+const SOCKET_URL =
+  process.env.NEXT_PUBLIC_SOCKET_URL || "http://localhost:3001";
+
 const httpServer = createServer();
 const io = new Server(httpServer, {
   cors: {
-    origin: "http://localhost:3000",
+    origin: NEXT_URL,
     methods: ["GET", "POST"],
   },
 });
@@ -287,5 +293,5 @@ function reshuffleDeck(game: GameState) {
 }
 
 httpServer.listen(3001, () => {
-  console.log("Socket.IO server running on port 3001");
+  console.log(`Socket.IO server running on ${SOCKET_URL}`);
 });
