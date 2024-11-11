@@ -25,7 +25,7 @@ export function GameLobby() {
     setView("game");
   };
 
-  if (view === "game" && gameState) {
+  if (view === "game" && gameState && socket) {
     return <GameBoard gameState={gameState} socket={socket} />;
   }
 

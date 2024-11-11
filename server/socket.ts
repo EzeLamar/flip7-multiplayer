@@ -220,10 +220,10 @@ function dealInitialCards(game: GameState) {
   });
 }
 
-function isValidPlay(card: Card, topCard: Card): boolean {
-  if (card.type === "wild") return true;
-  return card.color === topCard.color || card.value === topCard.value;
-}
+// function isValidPlay(card: Card, topCard: Card): boolean {
+//   if (card.type === "wild") return true;
+//   return card.color === topCard.color || card.value === topCard.value;
+// }
 
 function handleSpecialCard(game: GameState, card: Card) {
   switch (card.value) {
