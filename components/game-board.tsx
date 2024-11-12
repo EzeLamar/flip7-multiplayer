@@ -148,6 +148,33 @@ export function GameBoard({ gameState, socket }: GameBoardProps) {
           </Button>
         </div>
 
+        {/* Other Player's Hand */}
+        {gameState.players
+          .filter((player) => player.id !== thisPlayer?.id)
+          .map((player) => (
+            <div
+              key={player.id}
+              className="bg-white/90 backdrop-blur-sm rounded-lg p-4"
+            >
+              <h3 className="text-lg font-semibold mb-4">{player.name}</h3>
+              <ScrollArea className="h-60">
+                <div className="flex flex-wrap gap-2">
+                  {player.cards.map((card, index) => (
+                    <PlayingCard
+                      key={index}
+                      card={card}
+                      onClick={() => handlePlayCard(index)}
+                      isRepeated={
+                        player.cards.filter((c) => c.value === card.value)
+                          .length > 1
+                      }
+                      disabled={true}
+                    />
+                  ))}
+                </div>
+              </ScrollArea>
+            </div>
+          ))}
         {/* Wild Color Selection */}
         {selectedColor === "pending" && (
           <div className="fixed inset-0 bg-black/50 flex items-center justify-center">
