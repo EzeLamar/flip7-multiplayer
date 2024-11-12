@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { PlayingCard } from "@/components/playing-card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { toast } from "sonner";
+import { PlayerInfo } from "@/components/ui/gamerInfo";
 
 interface GameBoardProps {
   gameState: GameState;
@@ -25,7 +26,7 @@ export function GameBoard({ gameState, socket }: GameBoardProps) {
     if (!isCurrentPlayer) return;
 
     const card = currentPlayer.cards[cardIndex];
-    if (card.type === "wild" && !selectedColor) {
+    if (card.type === "special" && !selectedColor) {
       setSelectedColor("pending");
       return;
     }
@@ -52,7 +53,7 @@ export function GameBoard({ gameState, socket }: GameBoardProps) {
     setSelectedColor(color);
     // Re-emit the last attempted card play with the selected color
     const wildCardIndex = currentPlayer.cards.findIndex(
-      (card) => card.type === "wild"
+      (card) => card.type === "special"
     );
     if (wildCardIndex !== -1) {
       handlePlayCard(wildCardIndex);
@@ -96,9 +97,18 @@ export function GameBoard({ gameState, socket }: GameBoardProps) {
           <h2 className="text-xl font-bold mb-2">Game Info</h2>
           <p>Game ID: {gameState.id}</p>
           <p>Player: {thisPlayer?.name}</p>
-          <p>Score: {thisPlayer?.score}</p>
           <p>Cards in Deck: {gameState.deck.length}</p>
-          <p>Current Player: {currentPlayer?.name}</p>
+        </div>
+
+        {/* Player Info */}
+        <div className="flex gap-2">
+          {gameState.players.map((player) => (
+            <PlayerInfo
+              key={player.id}
+              player={player}
+              isCurrentPlayer={currentPlayer?.id === player.id}
+            />
+          ))}
         </div>
 
         {/* Player's Hand */}
