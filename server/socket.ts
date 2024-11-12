@@ -1,3 +1,4 @@
+import express from "express";
 import dotenv from "dotenv";
 dotenv.config();
 import { Server } from "socket.io";
@@ -5,9 +6,7 @@ import { createServer } from "http";
 import { GameState, Card, Player } from "@/lib/types";
 
 const NEXT_URL = process.env.NEXT_PUBLIC_SOCKET_URL || "http://localhost:3000";
-const SOCKET_URL =
-  process.env.NEXT_PUBLIC_SOCKET_URL || "http://localhost:3001";
-const PORT = SOCKET_URL.split(":")[2];
+const PORT = process.env.BACKEND_PORT ?? "3001";
 
 const httpServer = createServer((req, res) => {
   res.writeHead(200, { "Content-Type": "text/html" });
@@ -191,7 +190,8 @@ io.on("connection", (socket) => {
 
 function generateDeck(): Card[] {
   const numbers = Array.from({ length: 12 }, (_, i) => i.toString());
-  const specials = ["+8", "+10", "x2", "freeze"];
+  const modifiers = ["x2", "+2", "+4", "+6", "+8", "+10"];
+  const specials = ["freeze", "flip three", "second chance"];
   const deck: Card[] = [];
 
   deck.push({ value: "0", type: "number" });
@@ -200,16 +200,15 @@ function generateDeck(): Card[] {
       deck.push({ value: number, type: "number" });
     }
   });
-  // specials.forEach(special => {
-  //   deck.push({ value: special, type: 'special' });
-  //   deck.push({ value: special, type: 'special' });
-  // });
+  modifiers.forEach((modifier) => {
+    deck.push({ value: modifier, type: "modifier" });
+  });
 
-  // Add wild cards
-  // for (let i = 0; i < 4; i++) {
-  //   deck.push({ color: 'black', value: 'wild', type: 'wild' });
-  //   deck.push({ color: 'black', value: 'wild4', type: 'wild' });
-  // }
+  specials.forEach((special) => {
+    for (let i = 0; i < 3; i++) {
+      deck.push({ value: special, type: "special" });
+    }
+  });
 
   return shuffle(deck);
 }
@@ -227,11 +226,6 @@ function dealInitialCards(game: GameState) {
     player.cards = game.deck.splice(0, 7);
   });
 }
-
-// function isValidPlay(card: Card, topCard: Card): boolean {
-//   if (card.type === "wild") return true;
-//   return card.color === topCard.color || card.value === topCard.value;
-// }
 
 function handleSpecialCard(game: GameState, card: Card) {
   switch (card.value) {
@@ -261,12 +255,31 @@ function handleSpecialCard(game: GameState, card: Card) {
 function handleScoreCards(cards: Card[]): number {
   let score = 0;
   const numberCards = cards.filter((card) => card.type === "number");
-  const specialCards = cards.filter((card) => card.type === "special");
+  const modifierCards = cards.filter((card) => card.type === "modifier");
   numberCards.forEach((card) => {
     score += parseInt(card.value);
   });
-  specialCards.forEach((card) => {
-    score += card.value === "+8" ? 8 : card.value === "+10" ? 10 : 2;
+  modifierCards.forEach((card) => {
+    switch (card.value) {
+      case "x2":
+        score *= 2;
+        break;
+      case "+2":
+        score += 2;
+        break;
+      case "+4":
+        score += 4;
+        break;
+      case "+6":
+        score += 6;
+        break;
+      case "+8":
+        score += 8;
+        break;
+      case "+10":
+        score += 10;
+        break;
+    }
   });
 
   return score;

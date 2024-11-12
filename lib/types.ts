@@ -1,6 +1,6 @@
 export interface Card {
   value: string;
-  type: "number" | "special" | "wild";
+  type: "number" | "special" | "modifier";
 }
 
 type PlayerStatus = "start" | "dealing" | "stop";
