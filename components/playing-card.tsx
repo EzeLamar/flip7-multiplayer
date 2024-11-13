@@ -64,7 +64,7 @@ export function PlayingCard({
       onClick={onClick}
       disabled={disabled}
       className={cn(
-        "w-20 h-32 rounded-lg flex items-center justify-center text-white font-bold shadow-lg transform transition-transform hover:scale-105",
+        "rounded-lg flex items-center justify-center text-white font-bold shadow-lg transform transition-transform hover:scale-105",
         getCardColor(card.value),
         isRepeated && "border-4 border-red-500",
         disabled && "opacity-50 cursor-not-allowed",

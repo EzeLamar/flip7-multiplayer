@@ -8,6 +8,7 @@ import { PlayingCard } from "@/components/playing-card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { toast } from "sonner";
 import { PlayerInfo } from "@/components/ui/gamerInfo";
+import { cn } from "@/lib/utils";
 
 interface GameBoardProps {
   gameState: GameState;
@@ -91,90 +92,76 @@ export function GameBoard({ gameState, socket }: GameBoardProps) {
 
   return (
     <div className="container mx-auto px-4">
-      <div className="grid grid-cols-1 gap-8">
+      <div className="grid grid-cols-1 gap-6">
         {/* Game Info */}
         <div className="bg-white/90 backdrop-blur-sm rounded-lg p-4">
-          <h2 className="text-xl font-bold mb-2">Game Info</h2>
-          <p>Game ID: {gameState.id}</p>
-          <p>Player: {thisPlayer?.name}</p>
-          <p>Cards in Deck: {gameState.deck.length}</p>
-        </div>
-
-        {/* Player Info */}
-        <div className="flex gap-2">
-          {gameState.players.map((player) => (
-            <PlayerInfo
-              key={player.id}
-              player={player}
-              isCurrentPlayer={currentPlayer?.id === player.id}
-            />
-          ))}
-        </div>
-
-        {/* Player's Hand */}
-        <div className="bg-white/90 backdrop-blur-sm rounded-lg p-4">
-          <h3 className="text-lg font-semibold mb-4">Your Hand</h3>
-          <ScrollArea className="h-60">
-            <div className="flex flex-wrap gap-2">
-              {thisPlayer?.cards.map((card, index) => (
-                <PlayingCard
-                  key={index}
-                  card={card}
-                  onClick={() => handlePlayCard(index)}
-                  isRepeated={
-                    thisPlayer?.cards.filter((c) => c.value === card.value)
-                      .length > 1
-                  }
-                  disabled={
-                    !isCurrentPlayer || currentPlayer.status === "start"
-                  }
-                />
-              ))}
-            </div>
-          </ScrollArea>
+          <div className="flex justify-between">
+            <h2 className="text-xl font-bold mb-2">Game Info</h2>
+            <p>Room: {gameState.id}</p>
+          </div>
         </div>
 
         {/* Game Controls */}
-        <div className="flex justify-center gap-4">
-          <Button onClick={handleDrawCard} disabled={!isCurrentPlayer}>
-            Draw Card
+        <div className="flex justify-center items-center gap-10">
+          <Button
+            className="w-20 h-32"
+            onClick={handleDrawCard}
+            disabled={!isCurrentPlayer}
+          >
+            {`Draw (${gameState.deck.length})`}
           </Button>
           <Button
+            className="rounded-full border-2 border-primary px-3 py-7"
             onClick={handleStopDrawCard}
             disabled={blockStopButton()}
-            variant="secondary"
+            variant="destructive"
           >
             Stop!
           </Button>
         </div>
 
-        {/* Other Player's Hand */}
-        {gameState.players
-          .filter((player) => player.id !== thisPlayer?.id)
-          .map((player) => (
-            <div
-              key={player.id}
-              className="bg-white/90 backdrop-blur-sm rounded-lg p-4"
-            >
-              <h3 className="text-lg font-semibold mb-4">{player.name}</h3>
-              <ScrollArea className="h-60">
-                <div className="flex flex-wrap gap-2">
-                  {player.cards.map((card, index) => (
-                    <PlayingCard
-                      key={index}
-                      card={card}
-                      onClick={() => handlePlayCard(index)}
-                      isRepeated={
-                        player.cards.filter((c) => c.value === card.value)
-                          .length > 1
-                      }
-                      disabled={true}
-                    />
-                  ))}
-                </div>
-              </ScrollArea>
-            </div>
-          ))}
+        {/* Player's Hand */}
+        <div
+          className={cn(
+            "bg-white/90 backdrop-blur-sm rounded-lg p-4 min-h-[13rem]",
+            isCurrentPlayer &&
+              "border-2 border-primary transform transition-transform scale-105"
+          )}
+        >
+          <div className="flex justify-between gap-3">
+            <h3 className="text-lg font-semibold mb-4">{thisPlayer?.name}</h3>
+            <h3 className="text-lg font-semibold mb-4">{`Score: ${thisPlayer?.score}`}</h3>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {thisPlayer?.cards.map((card, index) => (
+              <PlayingCard
+                key={index}
+                card={card}
+                onClick={() => handlePlayCard(index)}
+                isRepeated={
+                  thisPlayer?.cards.filter((c) => c.value === card.value)
+                    .length > 1
+                }
+                disabled={!isCurrentPlayer || currentPlayer.status === "start"}
+                className="w-16 h-28"
+              />
+            ))}
+          </div>
+        </div>
+
+        {/* Other Player's Info */}
+        <div className="flex-col">
+          {gameState.players
+            .filter((player) => player.id !== thisPlayer?.id)
+            .map((player) => (
+              <PlayerInfo
+                key={player.id}
+                player={player}
+                isCurrentPlayer={currentPlayer?.id === player.id}
+              />
+            ))}
+        </div>
+
         {/* Wild Color Selection */}
         {selectedColor === "pending" && (
           <div className="fixed inset-0 bg-black/50 flex items-center justify-center">
