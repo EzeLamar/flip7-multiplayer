@@ -7,6 +7,7 @@ const inter = Inter({ subsets: ["latin"] });
 export const metadata: Metadata = {
   title: "Flip7 Online",
   description: "Card Boardgame multiplayer",
+  authors: [{ name: "Ezequiel Lamarque" }],
 };
 
 export default function RootLayout({

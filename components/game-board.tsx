@@ -76,6 +76,16 @@ export function GameBoard({ gameState, socket }: GameBoardProps) {
     return false;
   };
 
+  const isDisablePlayerButtonSelection = (player: Player, card: Card) => {
+    if (player.status === "stop") {
+      return true;
+    }
+
+    if (card.value === "second chance" && player.secondChance) {
+      return true;
+    }
+  }
+
   useEffect(() => {
     if (gameState.status === "finished") {
       const winner = gameState.players.find((p) => p.cards.length === 0);
@@ -158,7 +168,7 @@ export function GameBoard({ gameState, socket }: GameBoardProps) {
             ))}
         </div>
 
-        {/* Wild Color Selection */}
+        {/* Special Card Victim Modal */}
         { selectedCard && (
           <div className="fixed inset-0 bg-black/50 flex items-center justify-center">
             <div className="bg-white p-4 rounded-lg">
@@ -166,7 +176,7 @@ export function GameBoard({ gameState, socket }: GameBoardProps) {
               <div className="grid grid-cols-2 gap-2">
                 {gameState.players.map((player) => (
                   <Button
-                    disabled={player.status === "stop"}
+                    disabled={isDisablePlayerButtonSelection(player, selectedCard)}
                     key={player.id}
                     onClick={() => selectSpecialCardVictim(player, selectedCard)}
                     className={`bg-blue-500 hover:bg-blue-600`}
