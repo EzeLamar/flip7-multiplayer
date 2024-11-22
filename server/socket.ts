@@ -29,7 +29,9 @@ io.on("connection", (socket) => {
       id: socket.id,
       name: playerName,
       cards: [],
+      lastDrawnCard: null,
       status: "start",
+      secondChance: false,
       score: 0,
     };
 
@@ -41,6 +43,7 @@ io.on("connection", (socket) => {
       discardPile: [],
       direction: 1,
       status: "waiting",
+      flipCount: 1,
     };
 
     games.set(gameId, gameState);
@@ -64,7 +67,9 @@ io.on("connection", (socket) => {
       id: socket.id,
       name: playerName,
       cards: [],
+      lastDrawnCard: null,
       status: "start",
+      secondChance: false,
       score: 0,
     };
 
@@ -95,30 +100,19 @@ io.on("connection", (socket) => {
     io.to(gameId).emit("gameStarted", { gameState: game });
   });
 
-  // socket.on("playCard", ({ gameId, cardIndex }) => {
-  //   const game = games.get(gameId);
-  //   if (!game) return;
+  socket.on("playCard", ({ gameId, victimId, playedCard }) => {
+    const game = games.get(gameId);
+    if (!game) return;
 
-  //   const currentPlayer = game.players[game.currentPlayer];
-  //   if (currentPlayer.id !== socket.id) return;
+    const currentPlayer = game.players[game.currentPlayer];
+    if (currentPlayer.id !== socket.id) return;
 
-  //   const card = currentPlayer.cards[cardIndex];
-  //   const topCard = game.discardPile[game.discardPile.length - 1];
+    currentPlayer.cards.pop();
 
-  //   if (isValidPlay(card, topCard)) {
-  //     currentPlayer.cards.splice(cardIndex, 1);
-  //     game.discardPile.push(card);
-
-  //     if (currentPlayer.cards.length === 0) {
-  //       game.status = "finished";
-  //       io.to(gameId).emit("gameOver", { winner: currentPlayer });
-  //     } else {
-  //       handleSpecialCard(game, card);
-  //       game.currentPlayer = getNextPlayerIndex(game);
-  //       io.to(gameId).emit("gameStateUpdated", { gameState: game });
-  //     }
-  //   }
-  // });
+    handlePlaySpecialCard(game, victimId, playedCard);
+    currentPlayer.lastDrawnCard = null;
+    io.to(gameId).emit("gameStateUpdated", { gameState: game });
+  });
 
   socket.on("drawCard", (gameId: string) => {
     const game = games.get(gameId);
@@ -145,24 +139,28 @@ io.on("connection", (socket) => {
     }
 
     const newCard = game.deck.pop()!;
-    if (
-      currentPlayer.cards
-        .filter((card) => card.type === "number")
-        .find((card) => card.value === newCard.value)
-    ) {
-      currentPlayer.status = "stop";
+    currentPlayer.lastDrawnCard = newCard;
+
+    switch(newCard.type) {
+      case "number":
+        handleDrawNumberCard(game, currentPlayer, newCard);
+      case "modifier":
+        if (game.flipCount > 1) {
+          game.flipCount = game.flipCount - 1;
+        }
+        else {
+          game.currentPlayer = getNextPlayerIndex(game);
+        }
+        break;
+      case "special":
+        handleDrawSpecialCard(currentPlayer, newCard);
+        break;
+      default:
+        break;
     }
 
     currentPlayer.cards.push(newCard);
 
-    if (
-      currentPlayer.cards.filter((card) => card.type === "number").length === 7
-    ) {
-      currentPlayer.status = "stop";
-      currentPlayer.score = handleScoreCards(currentPlayer.cards) + 15;
-    }
-
-    game.currentPlayer = getNextPlayerIndex(game);
     io.to(gameId).emit("gameStateUpdated", { gameState: game });
   });
 
@@ -186,6 +184,82 @@ io.on("connection", (socket) => {
     // Handle player disconnection
   });
 });
+
+
+function handlePlaySpecialCard(game: GameState, victimId: string, playedCard: Card) {
+  const victim = game.players.find((player) => player.id === victimId);
+  const currentPlayer = game.players[game.currentPlayer];
+  if (!victim) {
+    return;
+  }
+
+  if (playedCard.value === "freeze") {
+    victim.status = "stop";
+    victim.secondChance = false;
+    if (currentPlayer.id === victim.id) {
+      game.flipCount = 1;
+    }
+
+    victim.score = victim.score + handleScoreCards(victim.cards);
+    game.currentPlayer = getNextPlayerIndex(game);
+    
+    return;
+  }
+
+  if (playedCard.value === "flip three") {
+    game.flipCount = game.flipCount + 3;
+    game.currentPlayer = game.players.findIndex((player) => player.id === victimId);
+
+    return;
+  }
+
+  if (playedCard.value === "second chance") {
+    victim.secondChance = true;
+    if (game.flipCount === 1) {
+      game.currentPlayer = getNextPlayerIndex(game);
+    }
+    
+    return;
+  }
+}
+
+function handleDrawNumberCard(game: GameState, player: Player, newCard: Card) {
+  if (
+    player.cards
+      .filter((card) => card.type === "number")
+      .find((card) => card.value === newCard.value)
+  ) {
+    if (player.secondChance) {  
+      const firstRepeatedCardIndex = player.cards.findIndex((card) => card.value === newCard.value);
+      player.cards.splice(firstRepeatedCardIndex, 1);
+      const secondChanceCardIndex = player.cards.findIndex((card) => card.value === "second chance");
+      player.cards.splice(secondChanceCardIndex, 1);
+      player.secondChance = false;
+      return;
+    }
+
+    player.status = "stop";
+    game.flipCount = 1;
+    return;
+  }
+
+  if (
+    player.cards.filter((card) => card.type === "number").length === 7
+  ) {
+    player.status = "stop";
+    game.flipCount = 1;
+    player.score = player.score + handleScoreCards(player.cards) + 15;
+  }
+}
+
+function handleDrawModifierCard(game: GameState) {
+  game.currentPlayer = getNextPlayerIndex(game);
+  return;
+}
+
+function handleDrawSpecialCard(player: Player, newCard: Card) {
+  return;
+}
 
 function generateDeck(): Card[] {
   const numbers = Array.from({ length: 12 }, (_, i) => i.toString());

@@ -28,7 +28,7 @@ export function PlayerInfo({
       )}
     >
       <div className="flex justify-between">
-        <div className="text-xl">{player.name}</div>
+        <div className="text-xl">{player.name} {player?.secondChance && "(2nd chance)"}</div>
         <div className="text-xl">{`Score: ${player.score}`}</div>
       </div>
       {/* Other Player's Hand */}

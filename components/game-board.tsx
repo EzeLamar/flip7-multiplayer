@@ -2,13 +2,13 @@
 
 import { useEffect, useState } from "react";
 import { Socket } from "socket.io-client";
-import { Card as CardType, GameState } from "@/lib/types";
+import { Card, Card as CardType, GameState, Player } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { PlayingCard } from "@/components/playing-card";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { toast } from "sonner";
 import { PlayerInfo } from "@/components/ui/gamerInfo";
 import { cn } from "@/lib/utils";
+import { Gem } from "lucide-react";
 
 interface GameBoardProps {
   gameState: GameState;
@@ -16,7 +16,7 @@ interface GameBoardProps {
 }
 
 export function GameBoard({ gameState, socket }: GameBoardProps) {
-  const [selectedColor, setSelectedColor] = useState<string | null>(null);
+  const [selectedCard, setSelectedCard] = useState<Card | null>(null);
   const currentPlayer = gameState.players[gameState.currentPlayer];
   const thisPlayer = gameState.players.find(
     (player) => player.id === socket.id
@@ -27,17 +27,9 @@ export function GameBoard({ gameState, socket }: GameBoardProps) {
     if (!isCurrentPlayer) return;
 
     const card = currentPlayer.cards[cardIndex];
-    if (card.type === "special" && !selectedColor) {
-      setSelectedColor("pending");
-      return;
+    if (card.type === "special") {
+      setSelectedCard(card);
     }
-
-    socket.emit("playCard", {
-      gameId: gameState.id,
-      cardIndex,
-      selectedColor,
-    });
-    setSelectedColor(null);
   };
 
   const handleDrawCard = () => {
@@ -50,25 +42,28 @@ export function GameBoard({ gameState, socket }: GameBoardProps) {
     socket.emit("stopDrawCard", gameState.id);
   };
 
-  const selectWildColor = (color: string) => {
-    setSelectedColor(color);
-    // Re-emit the last attempted card play with the selected color
-    const wildCardIndex = currentPlayer.cards.findIndex(
-      (card) => card.type === "special"
-    );
-    if (wildCardIndex !== -1) {
-      handlePlayCard(wildCardIndex);
-    }
+  const selectSpecialCardVictim = (player: Player, playedCard: Card) => {
+    socket.emit("playCard", {
+      gameId: gameState.id,
+      victimId: player.id,
+      playedCard,
+    });
+    setSelectedCard(null);
   };
 
   const blockStopButton = () => {
-    if (!isCurrentPlayer) {
+    if (gameState.flipCount > 1) {
+      return true;
+    }
+
+    if (!isCurrentPlayer || currentPlayer.lastDrawnCard?.type === "special") {
       return true;
     }
 
     if (currentPlayer.status === "start") {
       return true;
     }
+
 
     const cardValues = currentPlayer.cards.map((card) => card.value);
     const hasDuplicates = cardValues.some(
@@ -106,7 +101,7 @@ export function GameBoard({ gameState, socket }: GameBoardProps) {
           <Button
             className="w-20 h-32"
             onClick={handleDrawCard}
-            disabled={!isCurrentPlayer}
+            disabled={!isCurrentPlayer || currentPlayer.lastDrawnCard?.type === "special"}
           >
             {`Draw (${gameState.deck.length})`}
           </Button>
@@ -118,6 +113,7 @@ export function GameBoard({ gameState, socket }: GameBoardProps) {
           >
             Stop!
           </Button>
+          {gameState.flipCount > 1 && <h1 className="text-lg text-white">Force to Draw: {gameState.flipCount - 1}</h1>}
         </div>
 
         {/* Player's Hand */}
@@ -129,7 +125,7 @@ export function GameBoard({ gameState, socket }: GameBoardProps) {
           )}
         >
           <div className="flex justify-between gap-3">
-            <h3 className="text-lg font-semibold mb-4">{thisPlayer?.name}</h3>
+            <h3 className="text-lg font-semibold mb-4">{thisPlayer?.name} {thisPlayer?.secondChance && "(2nd chance)"}</h3>
             <h3 className="text-lg font-semibold mb-4">{`Score: ${thisPlayer?.score}`}</h3>
           </div>
           <div className="flex flex-wrap gap-2">
@@ -163,18 +159,19 @@ export function GameBoard({ gameState, socket }: GameBoardProps) {
         </div>
 
         {/* Wild Color Selection */}
-        {selectedColor === "pending" && (
+        { selectedCard && (
           <div className="fixed inset-0 bg-black/50 flex items-center justify-center">
             <div className="bg-white p-4 rounded-lg">
-              <h3 className="text-lg font-semibold mb-4">Select a Color</h3>
+              <h3 className="text-lg font-semibold mb-4">Select a Player</h3>
               <div className="grid grid-cols-2 gap-2">
-                {["red", "blue", "green", "yellow"].map((color) => (
+                {gameState.players.map((player) => (
                   <Button
-                    key={color}
-                    onClick={() => selectWildColor(color)}
-                    className={`bg-${color}-500 hover:bg-${color}-600`}
+                    disabled={player.status === "stop"}
+                    key={player.id}
+                    onClick={() => selectSpecialCardVictim(player, selectedCard)}
+                    className={`bg-blue-500 hover:bg-blue-600`}
                   >
-                    {color}
+                    {player.name}
                   </Button>
                 ))}
               </div>

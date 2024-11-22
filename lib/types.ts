@@ -9,7 +9,9 @@ export interface Player {
   id: string;
   name: string;
   cards: Card[];
+  lastDrawnCard: Card | null;
   status: PlayerStatus;
+  secondChance: boolean;
   score: number;
 }
 
@@ -20,5 +22,6 @@ export interface GameState {
   deck: Card[];
   discardPile: Card[];
   direction: number;
+  flipCount: number;
   status: "waiting" | "ready" | "playing" | "stopped" | "finished";
 }
