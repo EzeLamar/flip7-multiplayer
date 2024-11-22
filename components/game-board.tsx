@@ -17,6 +17,7 @@ interface GameBoardProps {
 
 export function GameBoard({ gameState, socket }: GameBoardProps) {
   const [selectedCard, setSelectedCard] = useState<Card | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
   const currentPlayer = gameState.players[gameState.currentPlayer];
   const thisPlayer = gameState.players.find(
     (player) => player.id === socket.id
@@ -35,7 +36,22 @@ export function GameBoard({ gameState, socket }: GameBoardProps) {
   const handleDrawCard = () => {
     if (!isCurrentPlayer) return;
     socket.emit("drawCard", gameState.id);
+    setIsLoading(true);
   };
+
+  useEffect(() => {
+    const handleGameStateUpdated = (updatedGameState: GameState) => {
+      if (updatedGameState.id === gameState.id) {
+        setIsLoading(false);
+      }
+    };
+
+    socket.on("gameStateUpdated", handleGameStateUpdated);
+
+    return () => {
+      socket.off("gameStateUpdated", handleGameStateUpdated);
+    };
+  }, [socket, gameState.id]);
 
   const handleStopDrawCard = () => {
     if (!isCurrentPlayer) return;
@@ -110,14 +126,14 @@ export function GameBoard({ gameState, socket }: GameBoardProps) {
         {/* Game Controls */}
         <div className="flex justify-center items-center gap-10">
           <Button
-            className="w-20 h-32"
+            className={cn("w-20 h-32 enabled:hover:scale-105")}
             onClick={handleDrawCard}
             disabled={!isCurrentPlayer || currentPlayer.lastDrawnCard?.type === "special"}
           >
             {`Draw (${gameState.deck.length})`}
           </Button>
           <Button
-            className="rounded-full border-2 border-primary px-3 py-7"
+            className="rounded-full border-2 border-primary px-3 py-7 enabled:hover:scale-105"
             onClick={handleStopDrawCard}
             disabled={blockStopButton()}
             variant="destructive"
