@@ -102,6 +102,7 @@ export function GameBoard({ gameState, socket }: GameBoardProps) {
         <div className="bg-white/90 backdrop-blur-sm rounded-lg p-4">
           <div className="flex justify-between">
             <h2 className="text-xl font-bold mb-2">Game Info</h2>
+            <h2>Round: {gameState.round}</h2>
             <p>Room: {gameState.id}</p>
           </div>
         </div>

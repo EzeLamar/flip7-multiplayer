@@ -44,6 +44,7 @@ io.on("connection", (socket) => {
       direction: 1,
       status: "waiting",
       flipCount: 1,
+      round: 1,
     };
 
     games.set(gameId, gameState);
@@ -366,6 +367,7 @@ function getNextPlayerIndex(game: GameState): number {
       player.status = "start";
     });
     game.discardPile = [...game.discardPile, ...discardedCards];
+    game.round += 1;
   }
 
   const currentPlayerIndex = game.currentPlayer;

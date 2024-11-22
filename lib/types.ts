@@ -17,6 +17,7 @@ export interface Player {
 
 export interface GameState {
   id: string;
+  round: number;
   players: Player[];
   currentPlayer: number;
   deck: Card[];
