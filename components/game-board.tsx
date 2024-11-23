@@ -34,9 +34,12 @@ export function GameBoard({ gameState, socket }: GameBoardProps) {
   };
 
   const handleDrawCard = () => {
-    if (!isCurrentPlayer) return;
-    socket.emit("drawCard", gameState.id);
+    if (!isCurrentPlayer) {
+      return;
+    }
+
     setIsLoading(true);
+    socket.emit("drawCard", gameState.id);
   };
 
   useEffect(() => {
@@ -80,7 +83,6 @@ export function GameBoard({ gameState, socket }: GameBoardProps) {
       return true;
     }
 
-
     const cardValues = currentPlayer.cards.map((card) => card.value);
     const hasDuplicates = cardValues.some(
       (value, index) => cardValues.indexOf(value) !== index
@@ -100,7 +102,7 @@ export function GameBoard({ gameState, socket }: GameBoardProps) {
     if (card.value === "second chance" && player.secondChance) {
       return true;
     }
-  }
+  };
 
   useEffect(() => {
     if (gameState.status === "finished") {
@@ -111,40 +113,23 @@ export function GameBoard({ gameState, socket }: GameBoardProps) {
     }
   }, [gameState.players, gameState.status]);
 
+  if (!thisPlayer) {
+    return;
+  }
+
   return (
-    <div className="container mx-auto px-4">
-      <div className="grid grid-cols-1 gap-6">
+    <div className="container max-w-4xl mx-auto px-4">
+      <div className="grid grid-cols-1 gap-2">
         {/* Game Info */}
-        <div className="bg-white/90 backdrop-blur-sm rounded-lg p-4">
-          <div className="flex justify-between">
-            <h2 className="text-xl font-bold mb-2">Game Info</h2>
-            <h2>Round: {gameState.round}</h2>
+        <div className="bg-black/80 text-white backdrop-blur-sm rounded-lg p-3">
+          <div className="flex justify-between items-center">
+            <h2 className="text-xl font-bold">Round {gameState.round}</h2>
             <p>Room: {gameState.id}</p>
           </div>
         </div>
 
-        {/* Game Controls */}
-        <div className="flex justify-center items-center gap-10">
-          <Button
-            className={cn("w-20 h-32 enabled:hover:scale-105")}
-            onClick={handleDrawCard}
-            disabled={!isCurrentPlayer || currentPlayer.lastDrawnCard?.type === "special"}
-          >
-            {`Draw (${gameState.deck.length})`}
-          </Button>
-          <Button
-            className="rounded-full border-2 border-primary px-3 py-7 enabled:hover:scale-105"
-            onClick={handleStopDrawCard}
-            disabled={blockStopButton()}
-            variant="destructive"
-          >
-            Stop!
-          </Button>
-          {gameState.flipCount > 1 && <h1 className="text-lg text-white">Force to Draw: {gameState.flipCount - 1}</h1>}
-        </div>
-
         {/* Player's Hand */}
-        <div
+        {/* <div
           className={cn(
             "bg-white/90 backdrop-blur-sm rounded-lg p-4 min-h-[13rem]",
             isCurrentPlayer &&
@@ -152,7 +137,9 @@ export function GameBoard({ gameState, socket }: GameBoardProps) {
           )}
         >
           <div className="flex justify-between gap-3">
-            <h3 className="text-lg font-semibold mb-4">{thisPlayer?.name} {thisPlayer?.secondChance && "(2nd chance)"}</h3>
+            <h3 className="text-lg font-semibold mb-4">
+              {thisPlayer?.name} {thisPlayer?.secondChance && "(2nd chance)"}
+            </h3>
             <h3 className="text-lg font-semibold mb-4">{`Score: ${thisPlayer?.score}`}</h3>
           </div>
           <div className="flex flex-wrap gap-2">
@@ -170,32 +157,72 @@ export function GameBoard({ gameState, socket }: GameBoardProps) {
               />
             ))}
           </div>
-        </div>
+        </div> */}
+        <PlayerInfo
+          key={thisPlayer?.id}
+          player={thisPlayer}
+          currentPlayer={currentPlayer}
+          handleClickCard={handlePlayCard}
+        />
 
         {/* Other Player's Info */}
-        <div className="flex-col">
+        <div className="flex flex-col gap-2">
           {gameState.players
             .filter((player) => player.id !== thisPlayer?.id)
             .map((player) => (
               <PlayerInfo
                 key={player.id}
                 player={player}
-                isCurrentPlayer={currentPlayer?.id === player.id}
+                currentPlayer={currentPlayer}
+                isDisableCardsSelection
               />
             ))}
         </div>
 
+        {/* Game Controls */}
+        <div className="flex justify-center items-center gap-10 mt-2">
+          <Button
+            className={cn("enabled:hover:scale-105")}
+            onClick={handleDrawCard}
+            disabled={
+              !isCurrentPlayer ||
+              currentPlayer.lastDrawnCard?.type === "special"
+            }
+          >
+            {`Draw (${gameState.deck.length})`}
+          </Button>
+          <Button
+            className="enabled:hover:scale-105"
+            onClick={handleStopDrawCard}
+            disabled={blockStopButton()}
+            variant="destructive"
+          >
+            Stop!
+          </Button>
+        </div>
+
+        {gameState.flipCount > 1 && (
+            <h1 className="text-lg text-white text-center mt-2">
+              Force to Draw: {gameState.flipCount - 1}
+            </h1>
+          )}
+
         {/* Special Card Victim Modal */}
-        { selectedCard && (
+        {selectedCard && (
           <div className="fixed inset-0 bg-black/50 flex items-center justify-center">
             <div className="bg-white p-4 rounded-lg">
               <h3 className="text-lg font-semibold mb-4">Select a Player</h3>
               <div className="grid grid-cols-2 gap-2">
                 {gameState.players.map((player) => (
                   <Button
-                    disabled={isDisablePlayerButtonSelection(player, selectedCard)}
+                    disabled={isDisablePlayerButtonSelection(
+                      player,
+                      selectedCard
+                    )}
                     key={player.id}
-                    onClick={() => selectSpecialCardVictim(player, selectedCard)}
+                    onClick={() =>
+                      selectSpecialCardVictim(player, selectedCard)
+                    }
                     className={`bg-blue-500 hover:bg-blue-600`}
                   >
                     {player.name}

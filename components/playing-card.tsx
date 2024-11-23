@@ -20,7 +20,17 @@ export function PlayingCard({
 }: PlayingCardProps) {
   const getCardColor = (value: string) => {
     if (card.type === "special") {
-      return "bg-gray-800";
+      if (value === "freeze") {
+        return "bg-gradient-to-br from-blue-400 via-blue-300 to-blue-900";
+      }
+
+      if (value === "flip three") {
+        return "bg-gradient-to-br from-yellow-900 via-yellow-300 to-yellow-900";
+      }
+
+      if (value === "second chance") {
+        return "bg-gradient-to-br from-red-100 via-red-500 to-red-900";
+      }
     }
     if (card.type === "modifier") {
       return "bg-yellow-800";
@@ -59,6 +69,22 @@ export function PlayingCard({
     }
   };
 
+  const getTextOfCard = (value: string): string => {
+    if (value === "second chance") {
+      return "SC";
+    }
+
+    if (value === "freeze") {
+      return "FR";
+    };
+
+    if (value === "flip three") {
+      return "F3";
+    }
+
+    return value;
+  }
+
   return (
     <button
       onClick={onClick}
@@ -71,7 +97,7 @@ export function PlayingCard({
         className
       )}
     >
-      <span className="text-xl">{card.value}</span>
+      <span className="text-xl">{getTextOfCard(card.value)}</span>
     </button>
   );
 }
