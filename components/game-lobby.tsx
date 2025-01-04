@@ -19,6 +19,10 @@ export function GameLobby() {
     setView("game");
   };
 
+  const handleRestartGame = () => {
+    setView("join");
+  };
+
   const handleJoinGame = () => {
     if (!playerName || !gameId) return;
     joinGame(gameId, playerName);
@@ -26,7 +30,7 @@ export function GameLobby() {
   };
 
   if (view === "game" && gameState && socket) {
-    return <GameBoard gameState={gameState} socket={socket} />;
+    return <GameBoard gameState={gameState} socket={socket} handleRestartGame={handleRestartGame} />;
   }
 
   return (

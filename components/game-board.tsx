@@ -13,9 +13,10 @@ import { Gem } from "lucide-react";
 interface GameBoardProps {
   gameState: GameState;
   socket: Socket;
+  handleRestartGame: () => void;
 }
 
-export function GameBoard({ gameState, socket }: GameBoardProps) {
+export function GameBoard({ gameState, socket, handleRestartGame }: GameBoardProps) {
   const [selectedCard, setSelectedCard] = useState<Card | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const currentPlayer = gameState.players[gameState.currentPlayer];
@@ -117,6 +118,8 @@ export function GameBoard({ gameState, socket }: GameBoardProps) {
     return;
   }
 
+  const isGameFinished = gameState.status === "finished" && gameState.players.every((p) => p.status === "stop");
+
   return (
     <div className="container max-w-4xl mx-auto px-4">
       <div className="grid grid-cols-1 gap-2">
@@ -212,7 +215,7 @@ export function GameBoard({ gameState, socket }: GameBoardProps) {
           <div className="fixed inset-0 bg-black/50 flex items-center justify-center">
             <div className="bg-white p-4 rounded-lg">
               <h3 className="text-lg font-semibold mb-4">Select a Player</h3>
-              <div className="grid grid-cols-2 gap-2">
+              <div className="flex justify-center gap-2">
                 {gameState.players.map((player) => (
                   <Button
                     disabled={isDisablePlayerButtonSelection(
@@ -229,6 +232,29 @@ export function GameBoard({ gameState, socket }: GameBoardProps) {
                   </Button>
                 ))}
               </div>
+            </div>
+          </div>
+        )}
+
+         {/* Score board Modal */}
+         {isGameFinished && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center">
+            <div className="bg-white px-5 py-3 rounded-lg">
+              <h3 className="text-lg font-semibold mb-4">Final Score</h3>
+              <div className="flex flex-col justify-center gap-2">
+                {gameState.players
+                  .slice()
+                  .sort((a, b) => b.score - a.score)
+                  .map((player) => (
+                    <p key={player.id}>{player.name}: {player.score}</p>
+                ))}
+              </div>
+              <Button
+                className={cn("mt-3 enabled:hover:scale-105")}
+                onClick={handleRestartGame}
+              >
+                Play Again
+              </Button>
             </div>
           </div>
         )}

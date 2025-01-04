@@ -6,6 +6,7 @@ import { GameState, Card, Player } from "@/lib/types";
 
 const NEXT_URL = process.env.NEXT_PUBLIC_SOCKET_URL || "http://localhost:3000";
 const PORT = process.env.BACKEND_PORT ?? "3001";
+const MAX_SCORE = 200;
 
 const httpServer = createServer((req, res) => {
   res.writeHead(200, { "Content-Type": "text/html" });
@@ -130,6 +131,10 @@ io.on("connection", (socket) => {
       return;
     }
 
+    if (game.status === "finished" && game.players.every((player => player.status === "stop"))) {
+      return
+    }
+
     if (currentPlayer.status === "start") {
       currentPlayer.status = "dealing";
       currentPlayer.cards = [];
@@ -175,6 +180,10 @@ io.on("connection", (socket) => {
     currentPlayer.score =
       currentPlayer.score + handleScoreCards(currentPlayer.cards);
     currentPlayer.status = "stop";
+     
+    if (currentPlayer.score >= MAX_SCORE) {
+      game.status = "finished";
+    }
 
     game.currentPlayer = getNextPlayerIndex(game);
     io.to(gameId).emit("gameStateUpdated", { gameState: game });
@@ -202,6 +211,10 @@ function handlePlaySpecialCard(game: GameState, victimId: string, playedCard: Ca
     }
 
     victim.score = victim.score + handleScoreCards(victim.cards);
+    if (currentPlayer.score >= MAX_SCORE) {
+      game.status = "finished";
+    }
+
     game.currentPlayer = getNextPlayerIndex(game);
     
     return;
@@ -253,11 +266,6 @@ function handleDrawNumberCard(game: GameState, player: Player, newCard: Card) {
   }
 }
 
-function handleDrawModifierCard(game: GameState) {
-  game.currentPlayer = getNextPlayerIndex(game);
-  return;
-}
-
 function handleDrawSpecialCard(player: Player, newCard: Card) {
   return;
 }
@@ -301,31 +309,6 @@ function dealInitialCards(game: GameState) {
   });
 }
 
-function handleSpecialCard(game: GameState, card: Card) {
-  switch (card.value) {
-    case "skip":
-      game.currentPlayer = getNextPlayerIndex(game);
-      break;
-    case "reverse":
-      game.direction *= -1;
-      break;
-    case "draw2":
-      const nextPlayer = game.players[getNextPlayerIndex(game)];
-      for (let i = 0; i < 2; i++) {
-        if (game.deck.length === 0) reshuffleDeck(game);
-        nextPlayer.cards.push(game.deck.pop()!);
-      }
-      break;
-    case "wild4":
-      const nextPlayerWild4 = game.players[getNextPlayerIndex(game)];
-      for (let i = 0; i < 4; i++) {
-        if (game.deck.length === 0) reshuffleDeck(game);
-        nextPlayerWild4.cards.push(game.deck.pop()!);
-      }
-      break;
-  }
-}
-
 function handleScoreCards(cards: Card[]): number {
   let score = 0;
   const numberCards = cards.filter((card) => card.type === "number");
@@ -360,6 +343,10 @@ function handleScoreCards(cards: Card[]): number {
 }
 
 function getNextPlayerIndex(game: GameState): number {
+  if (game.status === "finished") {
+    return 0;
+  }
+
   if (!game.players.find((player) => player.status === "dealing")) {
     const discardedCards: Card[] = [];
     game.players.forEach((player) => {
