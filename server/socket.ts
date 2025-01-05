@@ -6,7 +6,7 @@ import { GameState, Card, Player, PlayerHandStatus } from "@/lib/types";
 
 const NEXT_URL = process.env.NEXT_PUBLIC_SOCKET_URL || "http://localhost:3000";
 const PORT = process.env.BACKEND_PORT ?? "3001";
-const MAX_SCORE = 30;
+const MAX_SCORE = 200;
 
 const httpServer = createServer((req, res) => {
   res.writeHead(200, { "Content-Type": "text/html" });
