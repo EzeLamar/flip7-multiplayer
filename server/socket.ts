@@ -132,8 +132,11 @@ io.on("connection", (socket) => {
       return;
     }
 
-    if (game.status === "finished" && game.players.every((player => player.status === "stop"))) {
-      return
+    if (
+      game.status === "finished" &&
+      game.players.every((player) => player.status === "stop")
+    ) {
+      return;
     }
 
     if (currentPlayer.status === "start") {
@@ -148,19 +151,25 @@ io.on("connection", (socket) => {
     const newCard = game.deck.pop()!;
     currentPlayer.lastDrawnCard = newCard;
 
-    switch(newCard.type) {
+    switch (newCard.type) {
       case "number":
-        callbackResponse.status = handleDrawNumberCard(game, currentPlayer, newCard);
+        callbackResponse.status = handleDrawNumberCard(
+          game,
+          currentPlayer,
+          newCard
+        );
       case "modifier":
         if (game.flipCount > 1) {
           game.flipCount = game.flipCount - 1;
-        }
-        else {
+        } else {
           game.currentPlayer = getNextPlayerIndex(game);
         }
         break;
       case "special":
         handleDrawSpecialCard(currentPlayer, newCard);
+        if (game.flipCount > 1) {
+          game.flipCount = game.flipCount - 1;
+        }
         callbackResponse.status = "special";
         break;
       default:
@@ -184,7 +193,7 @@ io.on("connection", (socket) => {
     currentPlayer.score =
       currentPlayer.score + handleScoreCards(currentPlayer.cards);
     currentPlayer.status = "stop";
-     
+
     if (currentPlayer.score >= MAX_SCORE) {
       game.status = "finished";
     }
@@ -199,8 +208,11 @@ io.on("connection", (socket) => {
   });
 });
 
-
-function handlePlaySpecialCard(game: GameState, victimId: string, playedCard: Card) {
+function handlePlaySpecialCard(
+  game: GameState,
+  victimId: string,
+  playedCard: Card
+) {
   const victim = game.players.find((player) => player.id === victimId);
   const currentPlayer = game.players[game.currentPlayer];
   if (!victim) {
@@ -220,13 +232,15 @@ function handlePlaySpecialCard(game: GameState, victimId: string, playedCard: Ca
     }
 
     game.currentPlayer = getNextPlayerIndex(game);
-    
+
     return;
   }
 
   if (playedCard.value === "flip three") {
     game.flipCount = game.flipCount + 3;
-    game.currentPlayer = game.players.findIndex((player) => player.id === victimId);
+    game.currentPlayer = game.players.findIndex(
+      (player) => player.id === victimId
+    );
 
     return;
   }
@@ -236,24 +250,32 @@ function handlePlaySpecialCard(game: GameState, victimId: string, playedCard: Ca
     if (game.flipCount === 1) {
       game.currentPlayer = getNextPlayerIndex(game);
     }
-    
+
     return;
   }
 }
 
-function handleDrawNumberCard(game: GameState, player: Player, newCard: Card) : PlayerHandStatus {
+function handleDrawNumberCard(
+  game: GameState,
+  player: Player,
+  newCard: Card
+): PlayerHandStatus {
   if (
     player.cards
       .filter((card) => card.type === "number")
       .find((card) => card.value === newCard.value)
   ) {
-    if (player.secondChance) {  
-      const firstRepeatedCardIndex = player.cards.findIndex((card) => card.value === newCard.value);
+    if (player.secondChance) {
+      const firstRepeatedCardIndex = player.cards.findIndex(
+        (card) => card.value === newCard.value
+      );
       player.cards.splice(firstRepeatedCardIndex, 1);
-      const secondChanceCardIndex = player.cards.findIndex((card) => card.value === "second chance");
+      const secondChanceCardIndex = player.cards.findIndex(
+        (card) => card.value === "second chance"
+      );
       player.cards.splice(secondChanceCardIndex, 1);
       player.secondChance = false;
-      return "normal";
+      return "useSecondChance";
     }
 
     player.status = "stop";
@@ -261,11 +283,10 @@ function handleDrawNumberCard(game: GameState, player: Player, newCard: Card) : 
     return "duplicates";
   }
 
-  if (
-    player.cards.filter((card) => card.type === "number").length === 7
-  ) {
+  if (player.cards.filter((card) => card.type === "number").length === 7) {
     player.status = "stop";
     game.flipCount = 1;
+    player.secondChance = false;
     player.score = player.score + handleScoreCards(player.cards) + 15;
     return "flip7";
   }
@@ -381,7 +402,14 @@ function getNextPlayerIndex(game: GameState): number {
 }
 
 function reshuffleDeck(game: GameState) {
+  const specials = ["freeze", "flip three", "second chance"];
+
   const topCard = game.discardPile.pop()!;
+  specials.forEach((special) => {
+    for (let i = 0; i < 3; i++) {
+      game.discardPile.push({ value: special, type: "special" });
+    }
+  });
   game.deck = shuffle(game.discardPile);
   game.discardPile = [topCard];
 }

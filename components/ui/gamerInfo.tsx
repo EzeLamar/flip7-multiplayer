@@ -4,6 +4,7 @@ import { PlayingCard } from "@/components/playing-card";
 import { Player } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { ScrollArea } from "@radix-ui/react-scroll-area";
+import { Heart } from "lucide-react";
 
 interface PlayerInfoProps {
   player: Player;
@@ -31,8 +32,14 @@ export function PlayerInfo({
       )}
     >
       <div className="flex justify-between">
-        <div className="text-xl">
-          {player.name} {player?.secondChance && "(2nd chance)"}
+        <div className="flex text-xl gap-2">
+          {player.name}
+          {player?.secondChance && (
+            <>
+              <Heart fill="red" className="text-red-500" />
+              <span className="text-s text-red-500">Second Chance</span>
+            </>
+          )}
         </div>
         <div className="text-xl">{`Score: ${player.score}`}</div>
       </div>

@@ -2,7 +2,13 @@
 
 import { useEffect, useRef, useState } from "react";
 import { Socket } from "socket.io-client";
-import { Card, Card as CardType, GameState, Player, PlayerHandStatus } from "@/lib/types";
+import {
+  Card,
+  Card as CardType,
+  GameState,
+  Player,
+  PlayerHandStatus,
+} from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { PlayerInfo } from "@/components/ui/gamerInfo";
@@ -15,13 +21,19 @@ interface GameBoardProps {
   handleRestartGame: () => void;
 }
 
-export function GameBoard({ gameState, socket, handleRestartGame }: GameBoardProps) {
+export function GameBoard({
+  gameState,
+  socket,
+  handleRestartGame,
+}: GameBoardProps) {
   const [selectedCard, setSelectedCard] = useState<Card | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isPlaying, setIsPlaying] = useState<SoundKey | null>(null);
-  const audioRef = useRef<HTMLAudioElement | null>(null)
-  
-  const isGameFinished = gameState.status === "finished" && gameState.players.every((p) => p.status === "stop");
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+
+  const isGameFinished =
+    gameState.status === "finished" &&
+    gameState.players.every((p) => p.status === "stop");
   const currentPlayer = gameState.players[gameState.currentPlayer];
   const thisPlayer = gameState.players.find(
     (player) => player.id === socket.id
@@ -44,26 +56,39 @@ export function GameBoard({ gameState, socket, handleRestartGame }: GameBoardPro
 
     const idPlayer = currentPlayer.id;
 
-    playSound("draw");
+    if (gameState.flipCount > 1) {
+      playSound("useFlip3");
+    }
+    else {
+      playSound("draw");
+    }
     setIsLoading(true);
-    socket.emit("drawCard", gameState.id, (response : { status: PlayerHandStatus } ) => {
-      console.log(response);
-    //   const cardValues = currentPlayer.cards.map((card) => card.value);
-    // const hasDuplicates = cardValues.some(
-    //   (value, index) => cardValues.indexOf(value) !== index
-    // );
-      if (response.status === "duplicates") {
-        playSound("duplicates");
-      }
+    socket.emit(
+      "drawCard",
+      gameState.id,
+      (response: { status: PlayerHandStatus }) => {
+        console.log(response);
+        //   const cardValues = currentPlayer.cards.map((card) => card.value);
+        // const hasDuplicates = cardValues.some(
+        //   (value, index) => cardValues.indexOf(value) !== index
+        // );
+        if (response.status === "useSecondChance") {
+          playSound("useSecondChance");
+        }
 
-      if (response.status === "flip7") {
-        playSound("flip7");
-      }
+        if (response.status === "duplicates") {
+          playSound("duplicates");
+        }
 
-      if (response.status === "special") {
-        playSound("special");
+        if (response.status === "flip7") {
+          playSound("flip7");
+        }
+
+        if (response.status === "special") {
+          playSound("special");
+        }
       }
-    });   
+    );
   };
 
   useEffect(() => {
@@ -82,7 +107,7 @@ export function GameBoard({ gameState, socket, handleRestartGame }: GameBoardPro
 
   const handleStopDrawCard = () => {
     if (!isCurrentPlayer) return;
-    
+
     playSound("stop");
     socket.emit("stopDrawCard", gameState.id);
   };
@@ -93,6 +118,19 @@ export function GameBoard({ gameState, socket, handleRestartGame }: GameBoardPro
       victimId: player.id,
       playedCard,
     });
+    switch (playedCard.value) {
+      case "freeze":
+        playSound("useFreeze");
+        break;
+      case "flip three":
+        playSound("useFlip3");
+        break;
+      case "second chance":
+        playSound("getSecondChance");
+        break;
+      default:
+        break;
+    }
     setSelectedCard(null);
   };
 
@@ -126,22 +164,26 @@ export function GameBoard({ gameState, socket, handleRestartGame }: GameBoardPro
     }
 
     if (card.value === "second chance" && player.secondChance) {
+      if (gameState.players.every((p) => p.secondChance)) {
+        return false;
+      }
+      
       return true;
     }
   };
 
   const playSound = (soundKey: SoundKey) => {
     if (audioRef.current) {
-      audioRef.current.src = soundMappings[soundKey]
-      audioRef.current.currentTime = 0 // Reset to start
-      audioRef.current.play()
-      setIsPlaying(soundKey)
+      audioRef.current.src = soundMappings[soundKey];
+      audioRef.current.currentTime = 0; // Reset to start
+      audioRef.current.play();
+      setIsPlaying(soundKey);
     }
-  }
+  };
 
   const handleAudioEnd = () => {
     setIsPlaying(null);
-  }
+  };
 
   useEffect(() => {
     if (isGameFinished) {
@@ -156,7 +198,6 @@ export function GameBoard({ gameState, socket, handleRestartGame }: GameBoardPro
   if (!thisPlayer) {
     return;
   }
-
 
   return (
     <div className="container max-w-4xl mx-auto px-4">
@@ -249,10 +290,10 @@ export function GameBoard({ gameState, socket, handleRestartGame }: GameBoardPro
         </div>
 
         {gameState.flipCount > 1 && (
-            <h1 className="text-lg text-white text-center mt-2">
-              Force to Draw: {gameState.flipCount - 1}
-            </h1>
-          )}
+          <h1 className="text-lg text-white text-center mt-2">
+            Force to Draw: {gameState.flipCount - 1}
+          </h1>
+        )}
 
         {/* Special Card Victim Modal */}
         {selectedCard && (
@@ -280,8 +321,8 @@ export function GameBoard({ gameState, socket, handleRestartGame }: GameBoardPro
           </div>
         )}
 
-         {/* Score board Modal */}
-         {isGameFinished && (
+        {/* Score board Modal */}
+        {isGameFinished && (
           <div className="fixed inset-0 bg-black/50 flex items-center justify-center">
             <div className="bg-white px-5 py-3 rounded-lg">
               <h3 className="text-lg font-semibold mb-4">Final Score</h3>
@@ -290,8 +331,10 @@ export function GameBoard({ gameState, socket, handleRestartGame }: GameBoardPro
                   .slice()
                   .sort((a, b) => b.score - a.score)
                   .map((player) => (
-                    <p key={player.id}>{player.name}: {player.score}</p>
-                ))}
+                    <p key={player.id}>
+                      {player.name}: {player.score}
+                    </p>
+                  ))}
               </div>
               <Button
                 className={cn("mt-3 enabled:hover:scale-105")}

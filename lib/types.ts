@@ -1,11 +1,17 @@
 export interface Card {
-  value: string;
+  value: "freeze" | "flip three" | "second chance" | string;
   type: "number" | "special" | "modifier";
 }
 
 export type PlayerStatus = "start" | "dealing" | "stop";
 
-export type PlayerHandStatus = "normal" | "special" | "duplicates" | "stop" | "flip7";
+export type PlayerHandStatus =
+  | "normal"
+  | "special"
+  | "duplicates"
+  | "useSecondChance"
+  | "stop"
+  | "flip7";
 
 export interface Player {
   id: string;
