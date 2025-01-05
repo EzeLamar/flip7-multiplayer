@@ -3,7 +3,9 @@ export interface Card {
   type: "number" | "special" | "modifier";
 }
 
-type PlayerStatus = "start" | "dealing" | "stop";
+export type PlayerStatus = "start" | "dealing" | "stop";
+
+export type PlayerHandStatus = "normal" | "special" | "duplicates" | "stop" | "flip7";
 
 export interface Player {
   id: string;

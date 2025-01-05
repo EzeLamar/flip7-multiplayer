@@ -1,14 +1,13 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Socket } from "socket.io-client";
-import { Card, Card as CardType, GameState, Player } from "@/lib/types";
+import { Card, Card as CardType, GameState, Player, PlayerHandStatus } from "@/lib/types";
 import { Button } from "@/components/ui/button";
-import { PlayingCard } from "@/components/playing-card";
 import { toast } from "sonner";
 import { PlayerInfo } from "@/components/ui/gamerInfo";
 import { cn } from "@/lib/utils";
-import { Gem } from "lucide-react";
+import { soundMappings, SoundKey } from "@/utils/soundMappings";
 
 interface GameBoardProps {
   gameState: GameState;
@@ -19,6 +18,10 @@ interface GameBoardProps {
 export function GameBoard({ gameState, socket, handleRestartGame }: GameBoardProps) {
   const [selectedCard, setSelectedCard] = useState<Card | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [isPlaying, setIsPlaying] = useState<SoundKey | null>(null);
+  const audioRef = useRef<HTMLAudioElement | null>(null)
+  
+  const isGameFinished = gameState.status === "finished" && gameState.players.every((p) => p.status === "stop");
   const currentPlayer = gameState.players[gameState.currentPlayer];
   const thisPlayer = gameState.players.find(
     (player) => player.id === socket.id
@@ -39,8 +42,28 @@ export function GameBoard({ gameState, socket, handleRestartGame }: GameBoardPro
       return;
     }
 
+    const idPlayer = currentPlayer.id;
+
+    playSound("draw");
     setIsLoading(true);
-    socket.emit("drawCard", gameState.id);
+    socket.emit("drawCard", gameState.id, (response : { status: PlayerHandStatus } ) => {
+      console.log(response);
+    //   const cardValues = currentPlayer.cards.map((card) => card.value);
+    // const hasDuplicates = cardValues.some(
+    //   (value, index) => cardValues.indexOf(value) !== index
+    // );
+      if (response.status === "duplicates") {
+        playSound("duplicates");
+      }
+
+      if (response.status === "flip7") {
+        playSound("flip7");
+      }
+
+      if (response.status === "special") {
+        playSound("special");
+      }
+    });   
   };
 
   useEffect(() => {
@@ -59,6 +82,8 @@ export function GameBoard({ gameState, socket, handleRestartGame }: GameBoardPro
 
   const handleStopDrawCard = () => {
     if (!isCurrentPlayer) return;
+    
+    playSound("stop");
     socket.emit("stopDrawCard", gameState.id);
   };
 
@@ -105,20 +130,33 @@ export function GameBoard({ gameState, socket, handleRestartGame }: GameBoardPro
     }
   };
 
+  const playSound = (soundKey: SoundKey) => {
+    if (audioRef.current) {
+      audioRef.current.src = soundMappings[soundKey]
+      audioRef.current.currentTime = 0 // Reset to start
+      audioRef.current.play()
+      setIsPlaying(soundKey)
+    }
+  }
+
+  const handleAudioEnd = () => {
+    setIsPlaying(null);
+  }
+
   useEffect(() => {
-    if (gameState.status === "finished") {
+    if (isGameFinished) {
       const winner = gameState.players.find((p) => p.cards.length === 0);
       if (winner) {
         toast.success(`${winner.name} wins the game!`);
       }
+      playSound("win");
     }
-  }, [gameState.players, gameState.status]);
+  }, [gameState.players, isGameFinished]);
 
   if (!thisPlayer) {
     return;
   }
 
-  const isGameFinished = gameState.status === "finished" && gameState.players.every((p) => p.status === "stop");
 
   return (
     <div className="container max-w-4xl mx-auto px-4">
@@ -202,6 +240,12 @@ export function GameBoard({ gameState, socket, handleRestartGame }: GameBoardPro
           >
             Stop!
           </Button>
+          <audio
+            ref={audioRef}
+            onEnded={handleAudioEnd}
+            src="/draw-card.mp3"
+            crossOrigin="anonymous"
+          />
         </div>
 
         {gameState.flipCount > 1 && (

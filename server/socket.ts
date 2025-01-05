@@ -2,11 +2,11 @@ import dotenv from "dotenv";
 dotenv.config();
 import { Server } from "socket.io";
 import { createServer } from "http";
-import { GameState, Card, Player } from "@/lib/types";
+import { GameState, Card, Player, PlayerHandStatus } from "@/lib/types";
 
 const NEXT_URL = process.env.NEXT_PUBLIC_SOCKET_URL || "http://localhost:3000";
 const PORT = process.env.BACKEND_PORT ?? "3001";
-const MAX_SCORE = 200;
+const MAX_SCORE = 30;
 
 const httpServer = createServer((req, res) => {
   res.writeHead(200, { "Content-Type": "text/html" });
@@ -116,7 +116,8 @@ io.on("connection", (socket) => {
     io.to(gameId).emit("gameStateUpdated", { gameState: game });
   });
 
-  socket.on("drawCard", (gameId: string) => {
+  socket.on("drawCard", (gameId: string, callback) => {
+    const callbackResponse = { status: "dealing" };
     const game = games.get(gameId);
     if (!game) {
       return;
@@ -149,7 +150,7 @@ io.on("connection", (socket) => {
 
     switch(newCard.type) {
       case "number":
-        handleDrawNumberCard(game, currentPlayer, newCard);
+        callbackResponse.status = handleDrawNumberCard(game, currentPlayer, newCard);
       case "modifier":
         if (game.flipCount > 1) {
           game.flipCount = game.flipCount - 1;
@@ -160,6 +161,7 @@ io.on("connection", (socket) => {
         break;
       case "special":
         handleDrawSpecialCard(currentPlayer, newCard);
+        callbackResponse.status = "special";
         break;
       default:
         break;
@@ -168,6 +170,8 @@ io.on("connection", (socket) => {
     currentPlayer.cards.push(newCard);
 
     io.to(gameId).emit("gameStateUpdated", { gameState: game });
+
+    callback(callbackResponse);
   });
 
   socket.on("stopDrawCard", (gameId: string) => {
@@ -237,7 +241,7 @@ function handlePlaySpecialCard(game: GameState, victimId: string, playedCard: Ca
   }
 }
 
-function handleDrawNumberCard(game: GameState, player: Player, newCard: Card) {
+function handleDrawNumberCard(game: GameState, player: Player, newCard: Card) : PlayerHandStatus {
   if (
     player.cards
       .filter((card) => card.type === "number")
@@ -249,12 +253,12 @@ function handleDrawNumberCard(game: GameState, player: Player, newCard: Card) {
       const secondChanceCardIndex = player.cards.findIndex((card) => card.value === "second chance");
       player.cards.splice(secondChanceCardIndex, 1);
       player.secondChance = false;
-      return;
+      return "normal";
     }
 
     player.status = "stop";
     game.flipCount = 1;
-    return;
+    return "duplicates";
   }
 
   if (
@@ -263,7 +267,10 @@ function handleDrawNumberCard(game: GameState, player: Player, newCard: Card) {
     player.status = "stop";
     game.flipCount = 1;
     player.score = player.score + handleScoreCards(player.cards) + 15;
+    return "flip7";
   }
+
+  return "normal";
 }
 
 function handleDrawSpecialCard(player: Player, newCard: Card) {
