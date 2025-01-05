@@ -6,12 +6,14 @@ import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { GameBoard } from "@/components/game-board";
 import { useSocket } from "@/hooks/use-socket";
+import { useRouter } from 'next/navigation'
 
 export function GameLobby() {
   const [playerName, setPlayerName] = useState("");
   const [gameId, setGameId] = useState("");
   const [view, setView] = useState<"join" | "create" | "game">("join");
   const { socket, gameState, createGame, joinGame, startGame } = useSocket();
+  const router = useRouter();
 
   const handleCreateGame = () => {
     if (!playerName) return;
@@ -30,7 +32,7 @@ export function GameLobby() {
   }
 
   return (
-    <div className="max-w-md mx-auto">
+    <div className="max-w-md mx-auto flex flex-col gap-3 ">
       <Card className="p-6 bg-white/90 backdrop-blur-sm">
         <div className="space-y-4">
           <Input
@@ -75,6 +77,12 @@ export function GameLobby() {
           )}
         </div>
       </Card>
+      <Button 
+        className="mx-auto w-16"
+        variant="link"
+        onClick={() => router.push("/rules")}>
+          How to play?
+      </Button>
     </div>
   );
 }

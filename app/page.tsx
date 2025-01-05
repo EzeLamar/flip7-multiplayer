@@ -1,6 +1,5 @@
 import { BuyMeACoffeeButton } from "@/components/BuyMeACoffeeButton";
 import { GameLobby } from "@/components/game-lobby";
-import Image from "next/image";
 
 export default function Home() {
   return (
