@@ -112,6 +112,21 @@ export function GameBoard({
     socket.emit("stopDrawCard", gameState.id);
   };
 
+  const handleCopyInviteLink = () => {
+    const url =
+      window.location.origin +
+      window.location.pathname +
+      "?room=" +
+      gameState.id;
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText(url).then(() => {
+        toast.success("Invite link copied! Share it to invite players.");
+      });
+    } else {
+      toast.error("Copy not supported — room code: " + gameState.id);
+    }
+  };
+
   const selectSpecialCardVictim = (player: Player, playedCard: Card) => {
     socket.emit("playCard", {
       gameId: gameState.id,
@@ -206,7 +221,19 @@ export function GameBoard({
         <div className="bg-black/80 text-white backdrop-blur-sm rounded-lg p-3">
           <div className="flex justify-between items-center">
             <h2 className="text-xl font-bold">Round {gameState.round}</h2>
-            <p>Room: {gameState.id}</p>
+            <div className="flex items-center gap-3">
+              <p>Room: {gameState.id}</p>
+              {(gameState.status === "waiting" || gameState.status === "ready") && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="text-white border-white hover:bg-white/20 hover:text-white"
+                  onClick={handleCopyInviteLink}
+                >
+                  Invite Players
+                </Button>
+              )}
+            </div>
           </div>
         </div>
 
