@@ -27,6 +27,7 @@ export interface LastEvent {
   type: "freeze" | "flip-three" | "second-chance" | "bust" | "flip7" | "stop";
   targetName?: string;
   sourceName?: string;
+  pointsAdded?: number;
 }
 
 export interface GameState {
