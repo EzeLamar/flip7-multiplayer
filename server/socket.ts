@@ -158,17 +158,47 @@ io.on("connection", (socket) => {
           currentPlayer,
           newCard
         );
+        if (callbackResponse.status === "flip7") {
+          // End the round immediately for all still-active players
+          game.players.forEach((player) => {
+            if (player.status === "dealing") {
+              player.score += handleScoreCards(player.cards);
+              player.status = "stop";
+              player.secondChance = false;
+            }
+          });
+          if (game.players.some((p) => p.score >= MAX_SCORE)) {
+            game.status = "finished";
+          }
+          game.currentPlayer = getNextPlayerIndex(game);
+        } else if (callbackResponse.status === "duplicates") {
+          // Player busted: pass turn
+          game.currentPlayer = getNextPlayerIndex(game);
+        } else if (game.flipCount > 1) {
+          // Inside a Flip Three sequence: decrement counter
+          game.flipCount -= 1;
+          if (game.flipCount === 1) {
+            game.currentPlayer = getNextPlayerIndex(game);
+          }
+        }
+        // "normal" / "useSecondChance": player keeps drawing, no turn pass
+        break;
       case "modifier":
         if (game.flipCount > 1) {
-          game.flipCount = game.flipCount - 1;
-        } else {
-          game.currentPlayer = getNextPlayerIndex(game);
+          game.flipCount -= 1;
+          if (game.flipCount === 1) {
+            game.currentPlayer = getNextPlayerIndex(game);
+          }
         }
+        // Outside Flip Three: modifier goes to hand, player keeps drawing
         break;
       case "special":
         handleDrawSpecialCard(currentPlayer, newCard);
         if (game.flipCount > 1) {
-          game.flipCount = game.flipCount - 1;
+          game.flipCount -= 1;
+          if (game.flipCount === 1) {
+            game.currentPlayer = getNextPlayerIndex(game);
+          }
         }
         callbackResponse.status = "special";
         break;
@@ -227,7 +257,7 @@ function handlePlaySpecialCard(
     }
 
     victim.score = victim.score + handleScoreCards(victim.cards);
-    if (currentPlayer.score >= MAX_SCORE) {
+    if (victim.score >= MAX_SCORE) {
       game.status = "finished";
     }
 
@@ -246,7 +276,18 @@ function handlePlaySpecialCard(
   }
 
   if (playedCard.value === "second chance") {
-    victim.secondChance = true;
+    if (victim.secondChance) {
+      // Victim already has one: give it to another active player without one
+      const otherEligible = game.players.find(
+        (p) => p.id !== victimId && p.status === "dealing" && !p.secondChance
+      );
+      if (otherEligible) {
+        otherEligible.secondChance = true;
+      }
+      // else: no eligible player → card is discarded (no assignment)
+    } else {
+      victim.secondChance = true;
+    }
     if (game.flipCount === 1) {
       game.currentPlayer = getNextPlayerIndex(game);
     }
@@ -283,11 +324,14 @@ function handleDrawNumberCard(
     return "duplicates";
   }
 
-  if (player.cards.filter((card) => card.type === "number").length === 7) {
+  // Check BEFORE adding the card: player currently has 6 number cards and
+  // newCard is the 7th unique → Flip 7 bonus triggers
+  if (player.cards.filter((card) => card.type === "number").length === 6) {
     player.status = "stop";
     game.flipCount = 1;
     player.secondChance = false;
-    player.score = player.score + handleScoreCards(player.cards) + 15;
+    // Include the 7th card (newCard) in the score calculation
+    player.score = player.score + handleScoreCards([...player.cards, newCard]) + 15;
     return "flip7";
   }
 
@@ -299,7 +343,9 @@ function handleDrawSpecialCard(player: Player, newCard: Card) {
 }
 
 function generateDeck(): Card[] {
-  const numbers = Array.from({ length: 12 }, (_, i) => i.toString());
+  // Generates ["0","1","2",...,"12"]; the loop adds i copies of each value
+  // ("0" contributes 0 copies, handled by the explicit push below)
+  const numbers = Array.from({ length: 13 }, (_, i) => i.toString());
   const modifiers = ["x2", "+2", "+4", "+6", "+8", "+10"];
   const specials = ["freeze", "flip three", "second chance"];
   const deck: Card[] = [];
@@ -332,8 +378,9 @@ function shuffle(array: any[]): any[] {
 }
 
 function dealInitialCards(game: GameState) {
+  // Official rules: each player receives exactly 1 card face-up at round start
   game.players.forEach((player) => {
-    player.cards = game.deck.splice(0, 7);
+    player.cards = game.deck.splice(0, 1);
   });
 }
 
@@ -344,11 +391,12 @@ function handleScoreCards(cards: Card[]): number {
   numberCards.forEach((card) => {
     score += parseInt(card.value);
   });
+  // Apply x2 first (doubles number-card total), then additive modifiers
+  if (modifierCards.some((card) => card.value === "x2")) {
+    score *= 2;
+  }
   modifierCards.forEach((card) => {
     switch (card.value) {
-      case "x2":
-        score *= 2;
-        break;
       case "+2":
         score += 2;
         break;
@@ -396,8 +444,11 @@ function getNextPlayerIndex(game: GameState): number {
   const currentPlayerDealingIndex =
     dealingPlayerIndices.indexOf(currentPlayerIndex);
 
+  // Use double-modulo to handle direction=-1 correctly in JS
+  // (JS % can return negative values unlike Python)
+  const len = dealingPlayerIndices.length;
   const nextPlayerIndex =
-    (currentPlayerDealingIndex + game.direction) % dealingPlayerIndices.length;
+    ((currentPlayerDealingIndex + game.direction) % len + len) % len;
   return dealingPlayerIndices[nextPlayerIndex];
 }
 
