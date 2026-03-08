@@ -180,8 +180,10 @@ io.on("connection", (socket) => {
           if (game.flipCount === 1) {
             game.currentPlayer = getNextPlayerIndex(game);
           }
+        } else {
+          // Normal draw (including useSecondChance): one card per turn, pass turn
+          game.currentPlayer = getNextPlayerIndex(game);
         }
-        // "normal" / "useSecondChance": player keeps drawing, no turn pass
         break;
       case "modifier":
         if (game.flipCount > 1) {
@@ -189,8 +191,10 @@ io.on("connection", (socket) => {
           if (game.flipCount === 1) {
             game.currentPlayer = getNextPlayerIndex(game);
           }
+        } else {
+          // Normal draw: one card per turn, pass turn
+          game.currentPlayer = getNextPlayerIndex(game);
         }
-        // Outside Flip Three: modifier goes to hand, player keeps drawing
         break;
       case "special":
         handleDrawSpecialCard(currentPlayer, newCard);
@@ -423,7 +427,7 @@ function getNextPlayerIndex(game: GameState): number {
     return 0;
   }
 
-  if (!game.players.find((player) => player.status === "dealing")) {
+  if (game.players.every((player) => player.status === "stop")) {
     const discardedCards: Card[] = [];
     game.players.forEach((player) => {
       discardedCards.push(...player.cards);
