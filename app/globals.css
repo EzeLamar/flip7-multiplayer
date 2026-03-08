@@ -2,73 +2,39 @@
 @tailwind components;
 @tailwind utilities;
 
-:root {
-  --foreground-rgb: 0, 0, 0;
-  --background-start-rgb: 214, 219, 220;
-  --background-end-rgb: 255, 255, 255;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --foreground-rgb: 255, 255, 255;
-    --background-start-rgb: 0, 0, 0;
-    --background-end-rgb: 0, 0, 0;
-  }
-}
-
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 0 0% 3.9%;
-    --card: 0 0% 100%;
-    --card-foreground: 0 0% 3.9%;
-    --popover: 0 0% 100%;
-    --popover-foreground: 0 0% 3.9%;
-    --primary: 0 0% 9%;
-    --primary-foreground: 0 0% 98%;
-    --secondary: 0 0% 96.1%;
-    --secondary-foreground: 0 0% 9%;
-    --muted: 0 0% 96.1%;
-    --muted-foreground: 0 0% 45.1%;
-    --accent: 0 0% 96.1%;
-    --accent-foreground: 0 0% 9%;
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 0 0% 98%;
-    --border: 0 0% 89.8%;
-    --input: 0 0% 89.8%;
-    --ring: 0 0% 3.9%;
-    --chart-1: 12 76% 61%;
-    --chart-2: 173 58% 39%;
-    --chart-3: 197 37% 24%;
-    --chart-4: 43 74% 66%;
-    --chart-5: 27 87% 67%;
-    --radius: 0.5rem;
-  }
-  .dark {
-    --background: 0 0% 3.9%;
-    --foreground: 0 0% 98%;
-    --card: 0 0% 3.9%;
-    --card-foreground: 0 0% 98%;
-    --popover: 0 0% 3.9%;
-    --popover-foreground: 0 0% 98%;
-    --primary: 0 0% 98%;
-    --primary-foreground: 0 0% 9%;
-    --secondary: 0 0% 14.9%;
-    --secondary-foreground: 0 0% 98%;
-    --muted: 0 0% 14.9%;
-    --muted-foreground: 0 0% 63.9%;
-    --accent: 0 0% 14.9%;
-    --accent-foreground: 0 0% 98%;
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 0 0% 98%;
-    --border: 0 0% 14.9%;
-    --input: 0 0% 14.9%;
-    --ring: 0 0% 83.1%;
-    --chart-1: 220 70% 50%;
-    --chart-2: 160 60% 45%;
-    --chart-3: 30 80% 55%;
-    --chart-4: 280 65% 60%;
-    --chart-5: 340 75% 55%;
+    /* Arcade dark theme — always dark */
+    --background: 220 15% 6%;
+    --foreground: 0 0% 95%;
+    --card: 220 15% 10%;
+    --card-foreground: 0 0% 95%;
+    --popover: 220 15% 8%;
+    --popover-foreground: 0 0% 95%;
+    --primary: 270 100% 70%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 220 15% 16%;
+    --secondary-foreground: 0 0% 90%;
+    --muted: 220 15% 14%;
+    --muted-foreground: 220 10% 55%;
+    --accent: 270 80% 60%;
+    --accent-foreground: 0 0% 100%;
+    --destructive: 0 90% 55%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 220 15% 20%;
+    --input: 220 15% 14%;
+    --ring: 270 100% 70%;
+    --radius: 0.75rem;
+
+    /* Neon glow colors */
+    --neon-purple: 168, 85, 247;
+    --neon-cyan: 6, 182, 212;
+    --neon-pink: 236, 72, 153;
+    --neon-green: 34, 197, 94;
+    --neon-yellow: 234, 179, 8;
+    --neon-orange: 249, 115, 22;
+    --neon-red: 239, 68, 68;
+    --neon-blue: 59, 130, 246;
   }
 }
 
@@ -79,4 +45,97 @@
   body {
     @apply bg-background text-foreground;
   }
+}
+
+/* ===== KEYFRAME ANIMATIONS ===== */
+
+@keyframes neon-pulse {
+  0%, 100% {
+    box-shadow: 0 0 5px rgba(var(--neon-purple), 0.4),
+                0 0 15px rgba(var(--neon-purple), 0.2),
+                0 0 30px rgba(var(--neon-purple), 0.1);
+  }
+  50% {
+    box-shadow: 0 0 10px rgba(var(--neon-purple), 0.8),
+                0 0 25px rgba(var(--neon-purple), 0.5),
+                0 0 50px rgba(var(--neon-purple), 0.3);
+  }
+}
+
+@keyframes neon-pulse-cyan {
+  0%, 100% {
+    box-shadow: 0 0 5px rgba(var(--neon-cyan), 0.4),
+                0 0 15px rgba(var(--neon-cyan), 0.2);
+  }
+  50% {
+    box-shadow: 0 0 10px rgba(var(--neon-cyan), 0.8),
+                0 0 30px rgba(var(--neon-cyan), 0.5),
+                0 0 50px rgba(var(--neon-cyan), 0.2);
+  }
+}
+
+@keyframes card-appear {
+  from {
+    transform: scale(0.3) rotate(-15deg);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1) rotate(0deg);
+    opacity: 1;
+  }
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0) rotate(0deg); }
+  15%       { transform: translateX(-6px) rotate(-2deg); }
+  30%       { transform: translateX(6px) rotate(2deg); }
+  45%       { transform: translateX(-5px) rotate(-1deg); }
+  60%       { transform: translateX(5px) rotate(1deg); }
+  75%       { transform: translateX(-3px); }
+  90%       { transform: translateX(3px); }
+}
+
+@keyframes event-popup {
+  0%   { opacity: 0; transform: scale(0.4) translateY(20px); }
+  15%  { opacity: 1; transform: scale(1.08) translateY(-5px); }
+  30%  { transform: scale(1) translateY(0); }
+  70%  { opacity: 1; transform: scale(1); }
+  100% { opacity: 0; transform: scale(0.9) translateY(-10px); }
+}
+
+@keyframes score-flash {
+  0%, 100% { color: rgb(234, 179, 8); }
+  50%       { color: #ffffff; text-shadow: 0 0 20px rgb(234, 179, 8); }
+}
+
+@keyframes confetti-fall {
+  0%   { transform: translateY(-20px) rotate(0deg); opacity: 1; }
+  100% { transform: translateY(100px) rotate(720deg); opacity: 0; }
+}
+
+@keyframes float-in {
+  from { opacity: 0; transform: translateY(15px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes glow-border {
+  0%, 100% { border-color: rgba(var(--neon-purple), 0.5); }
+  50%       { border-color: rgba(var(--neon-purple), 1); }
+}
+
+@keyframes title-glow {
+  0%, 100% {
+    text-shadow: 0 0 10px rgba(var(--neon-purple), 0.5),
+                 0 0 30px rgba(var(--neon-purple), 0.3);
+  }
+  50% {
+    text-shadow: 0 0 20px rgba(var(--neon-purple), 1),
+                 0 0 60px rgba(var(--neon-purple), 0.6),
+                 0 0 100px rgba(var(--neon-pink), 0.3);
+  }
+}
+
+@keyframes bg-shift {
+  0%, 100% { background-position: 0% 50%; }
+  50%       { background-position: 100% 50%; }
 }

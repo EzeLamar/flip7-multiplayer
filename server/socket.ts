@@ -46,6 +46,7 @@ io.on("connection", (socket) => {
       status: "waiting",
       flipCount: 1,
       round: 1,
+      lastEvent: null,
     };
 
     games.set(gameId, gameState);
@@ -109,10 +110,21 @@ io.on("connection", (socket) => {
     const currentPlayer = game.players[game.currentPlayer];
     if (currentPlayer.id !== socket.id) return;
 
+    const victim = game.players.find((p) => p.id === victimId);
+
     currentPlayer.cards.pop();
 
     handlePlaySpecialCard(game, victimId, playedCard);
     currentPlayer.lastDrawnCard = null;
+
+    if (playedCard.value === "freeze") {
+      game.lastEvent = { type: "freeze", targetName: victim?.name, sourceName: currentPlayer.name };
+    } else if (playedCard.value === "flip three") {
+      game.lastEvent = { type: "flip-three", targetName: victim?.name, sourceName: currentPlayer.name };
+    } else if (playedCard.value === "second chance") {
+      game.lastEvent = { type: "second-chance", targetName: victim?.name, sourceName: currentPlayer.name };
+    }
+
     io.to(gameId).emit("gameStateUpdated", { gameState: game });
   });
 
@@ -159,6 +171,7 @@ io.on("connection", (socket) => {
           newCard
         );
         if (callbackResponse.status === "flip7") {
+          game.lastEvent = { type: "flip7", targetName: currentPlayer.name };
           // End the round immediately for all still-active players
           game.players.forEach((player) => {
             if (player.status === "dealing") {
@@ -172,6 +185,7 @@ io.on("connection", (socket) => {
           }
           game.currentPlayer = getNextPlayerIndex(game);
         } else if (callbackResponse.status === "duplicates") {
+          game.lastEvent = { type: "bust", targetName: currentPlayer.name };
           // Player busted: pass turn
           game.currentPlayer = getNextPlayerIndex(game);
         } else if (game.flipCount > 1) {
@@ -232,6 +246,7 @@ io.on("connection", (socket) => {
       game.status = "finished";
     }
 
+    game.lastEvent = { type: "stop", targetName: currentPlayer.name };
     game.currentPlayer = getNextPlayerIndex(game);
     io.to(gameId).emit("gameStateUpdated", { gameState: game });
   });

@@ -6,6 +6,7 @@ import {
   Card,
   Card as CardType,
   GameState,
+  LastEvent,
   Player,
   PlayerHandStatus,
 } from "@/lib/types";
@@ -14,12 +15,61 @@ import { toast } from "sonner";
 import { PlayerInfo } from "@/components/ui/gamerInfo";
 import { cn } from "@/lib/utils";
 import { soundMappings, SoundKey } from "@/utils/soundMappings";
+import { Copy, Users } from "lucide-react";
 
 interface GameBoardProps {
   gameState: GameState;
   socket: Socket;
   handleRestartGame: () => void;
 }
+
+const EVENT_CONFIG: Record<
+  LastEvent["type"],
+  { emoji: string; label: (e: LastEvent) => string; bg: string; border: string; glow: string }
+> = {
+  freeze: {
+    emoji: "❄️",
+    label: (e) => `${e.targetName} was FROZEN by ${e.sourceName}!`,
+    bg: "bg-blue-900/80",
+    border: "border-cyan-400/60",
+    glow: "shadow-[0_0_40px_rgba(6,182,212,0.5)]",
+  },
+  "flip-three": {
+    emoji: "🎴",
+    label: (e) => `${e.targetName} must draw 3 cards!`,
+    bg: "bg-orange-900/80",
+    border: "border-orange-400/60",
+    glow: "shadow-[0_0_40px_rgba(249,115,22,0.5)]",
+  },
+  "second-chance": {
+    emoji: "💖",
+    label: (e) => `${e.targetName} got Second Chance!`,
+    bg: "bg-pink-900/80",
+    border: "border-pink-400/60",
+    glow: "shadow-[0_0_40px_rgba(236,72,153,0.5)]",
+  },
+  bust: {
+    emoji: "💥",
+    label: (e) => `${e.targetName} BUSTED!`,
+    bg: "bg-red-900/80",
+    border: "border-red-400/60",
+    glow: "shadow-[0_0_40px_rgba(239,68,68,0.6)]",
+  },
+  flip7: {
+    emoji: "🌈",
+    label: (e) => `${e.targetName} got FLIP 7! +15 bonus!`,
+    bg: "bg-purple-900/80",
+    border: "border-purple-400/60",
+    glow: "shadow-[0_0_50px_rgba(168,85,247,0.7)]",
+  },
+  stop: {
+    emoji: "🛑",
+    label: (e) => `${e.targetName} stopped drawing!`,
+    bg: "bg-gray-900/80",
+    border: "border-teal-400/60",
+    glow: "shadow-[0_0_30px_rgba(20,184,166,0.4)]",
+  },
+};
 
 export function GameBoard({
   gameState,
@@ -29,7 +79,10 @@ export function GameBoard({
   const [selectedCard, setSelectedCard] = useState<Card | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isPlaying, setIsPlaying] = useState<SoundKey | null>(null);
+  const [broadcastEvent, setBroadcastEvent] = useState<LastEvent | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const prevLastEventRef = useRef<LastEvent | null>(null);
+  const broadcastTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const isGameFinished =
     gameState.status === "finished" &&
@@ -39,6 +92,30 @@ export function GameBoard({
     (player) => player.id === socket.id
   );
   const isCurrentPlayer = currentPlayer?.id === socket.id;
+
+  // Detect lastEvent changes and trigger broadcast overlay
+  useEffect(() => {
+    const newEvent = gameState.lastEvent;
+    const prevEvent = prevLastEventRef.current;
+
+    if (
+      newEvent &&
+      (prevEvent === null ||
+        prevEvent.type !== newEvent.type ||
+        prevEvent.targetName !== newEvent.targetName ||
+        prevEvent.sourceName !== newEvent.sourceName)
+    ) {
+      if (broadcastTimeoutRef.current) {
+        clearTimeout(broadcastTimeoutRef.current);
+      }
+      setBroadcastEvent(newEvent);
+      broadcastTimeoutRef.current = setTimeout(() => {
+        setBroadcastEvent(null);
+      }, 2500);
+    }
+
+    prevLastEventRef.current = newEvent;
+  }, [gameState.lastEvent]);
 
   const handlePlayCard = (cardIndex: number) => {
     if (!isCurrentPlayer) return;
@@ -58,8 +135,7 @@ export function GameBoard({
 
     if (gameState.flipCount > 1) {
       playSound("useFlip3");
-    }
-    else {
+    } else {
       playSound("draw");
     }
     setIsLoading(true);
@@ -68,22 +144,15 @@ export function GameBoard({
       gameState.id,
       (response: { status: PlayerHandStatus }) => {
         console.log(response);
-        //   const cardValues = currentPlayer.cards.map((card) => card.value);
-        // const hasDuplicates = cardValues.some(
-        //   (value, index) => cardValues.indexOf(value) !== index
-        // );
         if (response.status === "useSecondChance") {
           playSound("useSecondChance");
         }
-
         if (response.status === "duplicates") {
           playSound("duplicates");
         }
-
         if (response.status === "flip7") {
           playSound("flip7");
         }
-
         if (response.status === "special") {
           playSound("special");
         }
@@ -182,7 +251,6 @@ export function GameBoard({
       if (gameState.players.every((p) => p.secondChance)) {
         return false;
       }
-      
       return true;
     }
   };
@@ -190,7 +258,7 @@ export function GameBoard({
   const playSound = (soundKey: SoundKey) => {
     if (audioRef.current) {
       audioRef.current.src = soundMappings[soundKey];
-      audioRef.current.currentTime = 0; // Reset to start
+      audioRef.current.currentTime = 0;
       audioRef.current.play();
       setIsPlaying(soundKey);
     }
@@ -214,59 +282,84 @@ export function GameBoard({
     return;
   }
 
+  const sortedScoreboard = gameState.players
+    .slice()
+    .sort((a, b) => b.score - a.score);
+
+  const rankColors = ["text-yellow-300", "text-gray-300", "text-amber-600"];
+  const rankEmojis = ["🥇", "🥈", "🥉"];
+
   return (
-    <div className="container max-w-4xl mx-auto px-4">
-      <div className="grid grid-cols-1 gap-2">
-        {/* Game Info */}
-        <div className="bg-black/80 text-white backdrop-blur-sm rounded-lg p-3">
-          <div className="flex justify-between items-center">
-            <h2 className="text-xl font-bold">Round {gameState.round}</h2>
+    <div className="container max-w-4xl mx-auto px-3 pb-6">
+      {/* Power-up Broadcast Overlay */}
+      {broadcastEvent && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center pointer-events-none">
+          {/* Background tint */}
+          <div className={cn(
+            "absolute inset-0 opacity-20",
+            broadcastEvent.type === "bust" ? "bg-red-900" :
+            broadcastEvent.type === "flip7" ? "bg-purple-900" :
+            broadcastEvent.type === "freeze" ? "bg-blue-900" :
+            broadcastEvent.type === "flip-three" ? "bg-orange-900" :
+            broadcastEvent.type === "second-chance" ? "bg-pink-900" :
+            "bg-gray-900"
+          )} />
+          {/* Event card */}
+          <div
+            className={cn(
+              "relative rounded-3xl px-8 py-6 text-center animate-event-popup",
+              "backdrop-blur-xl border-2",
+              EVENT_CONFIG[broadcastEvent.type].bg,
+              EVENT_CONFIG[broadcastEvent.type].border,
+              EVENT_CONFIG[broadcastEvent.type].glow
+            )}
+          >
+            <div className="text-5xl mb-2">{EVENT_CONFIG[broadcastEvent.type].emoji}</div>
+            <div className="text-2xl font-black text-white leading-tight">
+              {EVENT_CONFIG[broadcastEvent.type].label(broadcastEvent)}
+            </div>
+          </div>
+        </div>
+      )}
+
+      <div className="grid grid-cols-1 gap-3">
+        {/* Game Info Bar */}
+        <div
+          className="text-white rounded-2xl px-4 py-3"
+          style={{
+            background: "rgba(0,0,0,0.6)",
+            backdropFilter: "blur(12px)",
+            border: "1px solid rgba(255,255,255,0.08)",
+          }}
+        >
+          <div className="flex flex-wrap justify-between items-center gap-2">
             <div className="flex items-center gap-3">
-              <p>Room: {gameState.id}</p>
+              <span className="text-xs uppercase tracking-widest text-gray-500">Round</span>
+              <span className="text-2xl font-black text-white">{gameState.round}</span>
+            </div>
+            <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2">
+                <span className="text-xs uppercase tracking-widest text-gray-500">Room</span>
+                <span className="font-mono text-green-400 font-bold tracking-widest text-sm">
+                  {gameState.id.toUpperCase()}
+                </span>
+              </div>
               {(gameState.status === "waiting" || gameState.status === "ready") && (
                 <Button
                   size="sm"
                   variant="outline"
-                  className="text-white border-white hover:bg-white/20 hover:text-white"
+                  className="text-purple-300 border-purple-500/50 hover:bg-purple-500/20 hover:text-purple-200 hover:border-purple-400 gap-1.5 text-xs"
                   onClick={handleCopyInviteLink}
                 >
-                  Invite Players
+                  <Copy className="w-3 h-3" />
+                  Invite
                 </Button>
               )}
             </div>
           </div>
         </div>
 
-        {/* Player's Hand */}
-        {/* <div
-          className={cn(
-            "bg-white/90 backdrop-blur-sm rounded-lg p-4 min-h-[13rem]",
-            isCurrentPlayer &&
-              "border-2 border-primary transform transition-transform scale-105"
-          )}
-        >
-          <div className="flex justify-between gap-3">
-            <h3 className="text-lg font-semibold mb-4">
-              {thisPlayer?.name} {thisPlayer?.secondChance && "(2nd chance)"}
-            </h3>
-            <h3 className="text-lg font-semibold mb-4">{`Score: ${thisPlayer?.score}`}</h3>
-          </div>
-          <div className="flex flex-wrap gap-2">
-            {thisPlayer?.cards.map((card, index) => (
-              <PlayingCard
-                key={index}
-                card={card}
-                onClick={() => handlePlayCard(index)}
-                isRepeated={
-                  thisPlayer?.cards.filter((c) => c.value === card.value)
-                    .length > 1
-                }
-                disabled={!isCurrentPlayer || currentPlayer.status === "start"}
-                className="w-16 h-28"
-              />
-            ))}
-          </div>
-        </div> */}
+        {/* My Player Hand */}
         <PlayerInfo
           key={thisPlayer?.id}
           player={thisPlayer}
@@ -274,7 +367,7 @@ export function GameBoard({
           handleClickCard={handlePlayCard}
         />
 
-        {/* Other Player's Info */}
+        {/* Other Players */}
         <div className="flex flex-col gap-2">
           {gameState.players
             .filter((player) => player.id !== thisPlayer?.id)
@@ -289,85 +382,198 @@ export function GameBoard({
         </div>
 
         {/* Game Controls */}
-        <div className="flex justify-center items-center gap-10 mt-2">
-          <Button
-            className={cn("enabled:hover:scale-105")}
-            onClick={handleDrawCard}
-            disabled={
-              !isCurrentPlayer ||
-              currentPlayer.lastDrawnCard?.type === "special"
-            }
-          >
-            {`Draw (${gameState.deck.length})`}
-          </Button>
-          <Button
-            className="enabled:hover:scale-105"
-            onClick={handleStopDrawCard}
-            disabled={blockStopButton()}
-            variant="destructive"
-          >
-            Stop!
-          </Button>
-          <audio
-            ref={audioRef}
-            onEnded={handleAudioEnd}
-            src="/draw-card.mp3"
-            crossOrigin="anonymous"
-          />
+        <div className="flex flex-col items-center gap-3 mt-1">
+          <div className="flex justify-center items-center gap-4">
+            <Button
+              onClick={handleDrawCard}
+              disabled={
+                !isCurrentPlayer ||
+                currentPlayer.lastDrawnCard?.type === "special" ||
+                isLoading
+              }
+              className={cn(
+                "h-12 px-8 text-base font-bold rounded-xl transition-all duration-200",
+                "bg-gradient-to-r from-cyan-500 to-blue-600",
+                "hover:from-cyan-400 hover:to-blue-500 hover:scale-105",
+                "shadow-[0_0_15px_rgba(6,182,212,0.4)] hover:shadow-[0_0_25px_rgba(6,182,212,0.6)]",
+                "disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:scale-100 disabled:shadow-none"
+              )}
+            >
+              🃏 Draw ({gameState.deck.length})
+            </Button>
+            <Button
+              onClick={handleStopDrawCard}
+              disabled={blockStopButton()}
+              className={cn(
+                "h-12 px-8 text-base font-bold rounded-xl transition-all duration-200",
+                "bg-gradient-to-r from-red-600 to-rose-600",
+                "hover:from-red-500 hover:to-rose-500 hover:scale-105",
+                "shadow-[0_0_15px_rgba(239,68,68,0.4)] hover:shadow-[0_0_25px_rgba(239,68,68,0.6)]",
+                "disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:scale-100 disabled:shadow-none"
+              )}
+            >
+              🛑 Stop!
+            </Button>
+          </div>
+
+          {gameState.flipCount > 1 && (
+            <div className="flex items-center gap-2 animate-pulse">
+              <span className="text-orange-300 bg-orange-500/20 border border-orange-500/50 rounded-full px-4 py-1.5 text-sm font-bold">
+                🎴 Force Draw: {gameState.flipCount - 1} remaining
+              </span>
+            </div>
+          )}
         </div>
 
-        {gameState.flipCount > 1 && (
-          <h1 className="text-lg text-white text-center mt-2">
-            Force to Draw: {gameState.flipCount - 1}
-          </h1>
-        )}
+        <audio
+          ref={audioRef}
+          onEnded={handleAudioEnd}
+          src="/draw-card.mp3"
+          crossOrigin="anonymous"
+        />
 
         {/* Special Card Victim Modal */}
         {selectedCard && (
-          <div className="fixed inset-0 bg-black/50 flex items-center justify-center">
-            <div className="bg-white p-4 rounded-lg">
-              <h3 className="text-lg font-semibold mb-4">Select a Player</h3>
-              <div className="flex justify-center gap-2">
+          <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-40">
+            <div
+              className="rounded-2xl p-6 max-w-sm w-full mx-4 animate-float-in"
+              style={{
+                background: "rgba(17,17,34,0.95)",
+                border: "1px solid rgba(168,85,247,0.5)",
+                boxShadow: "0 0 40px rgba(168,85,247,0.3)",
+              }}
+            >
+              <div className="text-center mb-5">
+                <div className="text-3xl mb-2">
+                  {selectedCard.value === "freeze" ? "❄️" :
+                   selectedCard.value === "flip three" ? "🎴" : "💖"}
+                </div>
+                <h3 className="text-lg font-bold text-white">
+                  Select a target for{" "}
+                  <span className="text-purple-300 capitalize">{selectedCard.value}</span>
+                </h3>
+              </div>
+              <div className="flex flex-wrap justify-center gap-2">
                 {gameState.players.map((player) => (
                   <Button
-                    disabled={isDisablePlayerButtonSelection(
-                      player,
-                      selectedCard
-                    )}
+                    disabled={!!isDisablePlayerButtonSelection(player, selectedCard)}
                     key={player.id}
-                    onClick={() =>
-                      selectSpecialCardVictim(player, selectedCard)
-                    }
-                    className={`bg-blue-500 hover:bg-blue-600`}
+                    onClick={() => selectSpecialCardVictim(player, selectedCard)}
+                    className={cn(
+                      "font-semibold rounded-xl transition-all duration-200",
+                      "bg-purple-600/40 hover:bg-purple-500/60 border border-purple-500/50",
+                      "hover:scale-105 hover:shadow-[0_0_15px_rgba(168,85,247,0.4)]",
+                      "disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:scale-100"
+                    )}
                   >
                     {player.name}
                   </Button>
                 ))}
               </div>
+              <button
+                onClick={() => setSelectedCard(null)}
+                className="mt-4 w-full text-sm text-gray-500 hover:text-gray-300 transition-colors"
+              >
+                Cancel
+              </button>
             </div>
           </div>
         )}
 
-        {/* Score board Modal */}
+        {/* Win / Score Screen */}
         {isGameFinished && (
-          <div className="fixed inset-0 bg-black/50 flex items-center justify-center">
-            <div className="bg-white px-5 py-3 rounded-lg">
-              <h3 className="text-lg font-semibold mb-4">Final Score</h3>
-              <div className="flex flex-col justify-center gap-2">
-                {gameState.players
-                  .slice()
-                  .sort((a, b) => b.score - a.score)
-                  .map((player) => (
-                    <p key={player.id}>
-                      {player.name}: {player.score}
-                    </p>
-                  ))}
+          <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-40">
+            {/* Confetti particles */}
+            <div className="absolute inset-0 pointer-events-none overflow-hidden">
+              {["bg-yellow-400", "bg-purple-400", "bg-pink-400", "bg-cyan-400", "bg-green-400"].map((color, i) =>
+                Array.from({ length: 6 }).map((_, j) => (
+                  <div
+                    key={`${i}-${j}`}
+                    className={cn(
+                      "absolute w-2 h-2 rounded-sm animate-confetti-fall",
+                      color
+                    )}
+                    style={{
+                      left: `${(i * 20 + j * 3) % 100}%`,
+                      top: "-10px",
+                      animationDelay: `${(i * 0.2 + j * 0.15)}s`,
+                      animationDuration: `${1.2 + (i + j) * 0.1}s`,
+                    }}
+                  />
+                ))
+              )}
+            </div>
+
+            <div
+              className="relative rounded-3xl px-8 py-6 max-w-md w-full mx-4 animate-float-in"
+              style={{
+                background: "rgba(10,10,20,0.98)",
+                border: "1px solid rgba(168,85,247,0.5)",
+                boxShadow: "0 0 60px rgba(168,85,247,0.3), 0 0 120px rgba(168,85,247,0.1)",
+              }}
+            >
+              <div className="text-center mb-6">
+                <div className="text-5xl mb-2">🏆</div>
+                <h2
+                  className="text-4xl font-black"
+                  style={{
+                    background: "linear-gradient(135deg, #a855f7, #ec4899, #f59e0b)",
+                    WebkitBackgroundClip: "text",
+                    WebkitTextFillColor: "transparent",
+                  }}
+                >
+                  GAME OVER
+                </h2>
+                <p className="text-gray-400 text-sm mt-1">Final Standings</p>
               </div>
+
+              <div className="flex flex-col gap-2 mb-6">
+                {sortedScoreboard.map((player, index) => (
+                  <div
+                    key={player.id}
+                    className={cn(
+                      "flex items-center justify-between rounded-xl px-4 py-3",
+                      index === 0
+                        ? "bg-yellow-500/20 border border-yellow-500/40"
+                        : index === 1
+                        ? "bg-gray-500/20 border border-gray-500/30"
+                        : index === 2
+                        ? "bg-amber-700/20 border border-amber-700/30"
+                        : "bg-white/5 border border-white/10"
+                    )}
+                  >
+                    <div className="flex items-center gap-3">
+                      <span className="text-xl">
+                        {index < 3 ? rankEmojis[index] : `#${index + 1}`}
+                      </span>
+                      <span className={cn(
+                        "font-bold text-base",
+                        index < 3 ? rankColors[index] : "text-gray-300"
+                      )}>
+                        {player.name}
+                      </span>
+                    </div>
+                    <span className={cn(
+                      "font-black text-xl",
+                      index === 0 ? "text-yellow-300" : "text-gray-400"
+                    )}>
+                      {player.score}
+                      <span className="text-xs font-medium text-gray-600 ml-1">pts</span>
+                    </span>
+                  </div>
+                ))}
+              </div>
+
               <Button
-                className={cn("mt-3 enabled:hover:scale-105")}
                 onClick={handleRestartGame}
+                className={cn(
+                  "w-full h-12 text-base font-bold rounded-xl transition-all duration-200",
+                  "bg-gradient-to-r from-purple-600 to-pink-600",
+                  "hover:from-purple-500 hover:to-pink-500 hover:scale-105",
+                  "shadow-[0_0_20px_rgba(168,85,247,0.5)]"
+                )}
               >
-                Play Again
+                🎮 Play Again
               </Button>
             </div>
           </div>
