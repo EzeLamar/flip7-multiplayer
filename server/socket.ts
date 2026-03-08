@@ -120,6 +120,10 @@ io.on("connection", (socket) => {
     if (currentPlayer.id !== socket.id) return;
 
     const victim = game.players.find((p) => p.id === victimId);
+    const freezePointsAdded =
+      playedCard.value === "freeze" && victim
+        ? handleScoreCards(victim.cards)
+        : undefined;
 
     currentPlayer.cards.pop();
 
@@ -127,7 +131,7 @@ io.on("connection", (socket) => {
     currentPlayer.lastDrawnCard = null;
 
     if (playedCard.value === "freeze") {
-      game.lastEvent = { type: "freeze", targetName: victim?.name, sourceName: currentPlayer.name };
+      game.lastEvent = { type: "freeze", targetName: victim?.name, sourceName: currentPlayer.name, pointsAdded: freezePointsAdded };
     } else if (playedCard.value === "flip three") {
       game.lastEvent = { type: "flip-three", targetName: victim?.name, sourceName: currentPlayer.name };
     } else if (playedCard.value === "second chance") {
@@ -172,6 +176,7 @@ io.on("connection", (socket) => {
     const newCard = game.deck.pop()!;
     currentPlayer.lastDrawnCard = newCard;
 
+    const scoreBeforeDraw = currentPlayer.score;
     switch (newCard.type) {
       case "number":
         callbackResponse.status = handleDrawNumberCard(
@@ -180,7 +185,7 @@ io.on("connection", (socket) => {
           newCard
         );
         if (callbackResponse.status === "flip7") {
-          game.lastEvent = { type: "flip7", targetName: currentPlayer.name };
+          game.lastEvent = { type: "flip7", targetName: currentPlayer.name, pointsAdded: currentPlayer.score - scoreBeforeDraw };
           // End the round immediately for all still-active players
           game.players.forEach((player) => {
             if (player.status === "dealing") {
@@ -247,15 +252,15 @@ io.on("connection", (socket) => {
     const currentPlayer = game.players[game.currentPlayer];
     if (currentPlayer.id !== socket.id) return;
 
-    currentPlayer.score =
-      currentPlayer.score + handleScoreCards(currentPlayer.cards);
+    const stopPointsAdded = handleScoreCards(currentPlayer.cards);
+    currentPlayer.score = currentPlayer.score + stopPointsAdded;
     currentPlayer.status = "stop";
 
     if (currentPlayer.score >= MAX_SCORE) {
       game.status = "finished";
     }
 
-    game.lastEvent = { type: "stop", targetName: currentPlayer.name };
+    game.lastEvent = { type: "stop", targetName: currentPlayer.name, pointsAdded: stopPointsAdded };
     game.currentPlayer = getNextPlayerIndex(game);
     io.to(gameId).emit("gameStateUpdated", { gameState: game });
   });

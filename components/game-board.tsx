@@ -318,6 +318,11 @@ export function GameBoard({
             <div className="text-2xl font-black text-white leading-tight">
               {EVENT_CONFIG[broadcastEvent.type].label(broadcastEvent)}
             </div>
+            {broadcastEvent.pointsAdded !== undefined && (
+              <div className="mt-2 text-3xl font-black text-green-400">
+                +{broadcastEvent.pointsAdded} pts
+              </div>
+            )}
           </div>
         </div>
       )}
