@@ -433,52 +433,90 @@ export function GameBoard({
         />
 
         {/* Special Card Victim Modal */}
-        {selectedCard && (
-          <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-40">
-            <div
-              className="rounded-2xl p-6 max-w-sm w-full mx-4 animate-float-in"
-              style={{
-                background: "rgba(17,17,34,0.95)",
-                border: "1px solid rgba(168,85,247,0.5)",
-                boxShadow: "0 0 40px rgba(168,85,247,0.3)",
-              }}
-            >
-              <div className="text-center mb-5">
-                <div className="text-3xl mb-2">
-                  {selectedCard.value === "freeze" ? "❄️" :
-                   selectedCard.value === "flip three" ? "🎴" : "💖"}
-                </div>
-                <h3 className="text-lg font-bold text-white">
-                  Select a target for{" "}
-                  <span className="text-purple-300 capitalize">{selectedCard.value}</span>
-                </h3>
-              </div>
-              <div className="flex flex-wrap justify-center gap-2">
-                {gameState.players.map((player) => (
-                  <Button
-                    disabled={!!isDisablePlayerButtonSelection(player, selectedCard)}
-                    key={player.id}
-                    onClick={() => selectSpecialCardVictim(player, selectedCard)}
-                    className={cn(
-                      "font-semibold rounded-xl transition-all duration-200",
-                      "bg-purple-600/40 hover:bg-purple-500/60 border border-purple-500/50",
-                      "hover:scale-105 hover:shadow-[0_0_15px_rgba(168,85,247,0.4)]",
-                      "disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:scale-100"
-                    )}
-                  >
-                    {player.name}
-                  </Button>
-                ))}
-              </div>
-              <button
-                onClick={() => setSelectedCard(null)}
-                className="mt-4 w-full text-sm text-gray-500 hover:text-gray-300 transition-colors"
+        {selectedCard && (() => {
+          const activePlayers = gameState.players.filter((p) => p.status !== "stop");
+          const allActiveHaveSecondChance =
+            selectedCard.value === "second chance" &&
+            activePlayers.length > 0 &&
+            activePlayers.every((p) => p.secondChance);
+
+          return (
+            <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-40">
+              <div
+                className="rounded-2xl p-6 max-w-sm w-full mx-4 animate-float-in"
+                style={{
+                  background: "rgba(17,17,34,0.95)",
+                  border: "1px solid rgba(168,85,247,0.5)",
+                  boxShadow: "0 0 40px rgba(168,85,247,0.3)",
+                }}
               >
-                Cancel
-              </button>
+                <div className="text-center mb-5">
+                  <div className="text-3xl mb-2">
+                    {selectedCard.value === "freeze" ? "❄️" :
+                     selectedCard.value === "flip three" ? "🎴" : "💖"}
+                  </div>
+                  <h3 className="text-lg font-bold text-white">
+                    {allActiveHaveSecondChance ? (
+                      <span className="text-pink-300">Second Chance</span>
+                    ) : (
+                      <>
+                        Select a target for{" "}
+                        <span className="text-purple-300 capitalize">{selectedCard.value}</span>
+                      </>
+                    )}
+                  </h3>
+                </div>
+
+                {allActiveHaveSecondChance ? (
+                  <div className="text-center space-y-4">
+                    <p className="text-sm text-pink-200/80 bg-pink-900/30 border border-pink-500/30 rounded-xl px-4 py-3">
+                      All active players already have Second Chance. The card will be discarded.
+                    </p>
+                    <Button
+                      onClick={() => {
+                        // All active players have secondChance=true; server will discard the card.
+                        const anyActive = gameState.players.find((p) => p.status !== "stop")!;
+                        selectSpecialCardVictim(anyActive, selectedCard);
+                      }}
+                      className={cn(
+                        "w-full font-semibold rounded-xl transition-all duration-200",
+                        "bg-pink-700/50 hover:bg-pink-600/60 border border-pink-500/60",
+                        "hover:scale-105 hover:shadow-[0_0_15px_rgba(236,72,153,0.4)]"
+                      )}
+                    >
+                      Discard Card
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="flex flex-wrap justify-center gap-2">
+                    {gameState.players.map((player) => (
+                      <Button
+                        disabled={!!isDisablePlayerButtonSelection(player, selectedCard)}
+                        key={player.id}
+                        onClick={() => selectSpecialCardVictim(player, selectedCard)}
+                        className={cn(
+                          "font-semibold rounded-xl transition-all duration-200",
+                          "bg-purple-600/40 hover:bg-purple-500/60 border border-purple-500/50",
+                          "hover:scale-105 hover:shadow-[0_0_15px_rgba(168,85,247,0.4)]",
+                          "disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:scale-100"
+                        )}
+                      >
+                        {player.name}
+                      </Button>
+                    ))}
+                  </div>
+                )}
+
+                <button
+                  onClick={() => setSelectedCard(null)}
+                  className="mt-4 w-full text-sm text-gray-500 hover:text-gray-300 transition-colors"
+                >
+                  Cancel
+                </button>
+              </div>
             </div>
-          </div>
-        )}
+          );
+        })()}
 
         {/* Win / Score Screen */}
         {isGameFinished && (

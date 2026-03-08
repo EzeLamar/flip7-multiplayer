@@ -11,6 +11,7 @@ export function GameLobby() {
   const [playerName, setPlayerName] = useState("");
   const [gameId, setGameId] = useState("");
   const [view, setView] = useState<"join" | "create" | "game">("join");
+  const [showRules, setShowRules] = useState(false);
   const { socket, gameState, createGame, joinGame, startGame } = useSocket();
 
   useEffect(() => {
@@ -138,11 +139,74 @@ export function GameLobby() {
           </>
         )}
 
-        {/* Game rules hint */}
+        {/* Game rules hint + expandable how-to-play */}
         <div className="pt-2 border-t border-white/10">
           <p className="text-xs text-gray-500 text-center leading-relaxed">
             Collect cards without duplicates • 7 unique numbers = FLIP7! • First to 200 pts wins
           </p>
+          <button
+            onClick={() => setShowRules((s) => !s)}
+            className="mt-2 w-full text-xs text-purple-400 hover:text-purple-300 transition-colors text-center"
+          >
+            {showRules ? "Hide rules ▲" : "How to play ▼"}
+          </button>
+
+          {showRules && (
+            <div className="mt-3 space-y-3 text-xs text-gray-400">
+              {/* Objective */}
+              <div>
+                <p className="text-purple-300 font-semibold mb-1">Objective</p>
+                <p>Be the first player to reach 200 points across multiple rounds.</p>
+              </div>
+
+              {/* Turn structure */}
+              <div>
+                <p className="text-purple-300 font-semibold mb-1">Your Turn</p>
+                <ul className="space-y-1 list-disc list-inside">
+                  <li>Draw cards one at a time to build your hand.</li>
+                  <li>Press <span className="text-white font-medium">Stop</span> at any time to lock in your score for the round.</li>
+                  <li>Drawing a <span className="text-red-400 font-medium">duplicate number</span> causes a bust — you lose all cards and score 0 this round.</li>
+                </ul>
+              </div>
+
+              {/* FLIP 7 */}
+              <div>
+                <p className="text-purple-300 font-semibold mb-1">FLIP 7</p>
+                <p>Collect 7 <span className="text-white font-medium">different</span> number cards to trigger FLIP 7. You automatically stop and earn a <span className="text-yellow-300 font-medium">+15 bonus</span> on top of your card total.</p>
+              </div>
+
+              {/* Card types */}
+              <div>
+                <p className="text-purple-300 font-semibold mb-1">Card Types</p>
+                <ul className="space-y-1">
+                  <li><span className="text-white font-medium">Number cards (0–12)</span> — contribute their face value to your score.</li>
+                  <li><span className="text-green-400 font-medium">+2 / +4 / +6 / +8 / +10</span> — add that amount to your total score.</li>
+                  <li><span className="text-yellow-300 font-medium">x2</span> — doubles your number-card subtotal before additive modifiers are applied.</li>
+                </ul>
+              </div>
+
+              {/* Special cards */}
+              <div>
+                <p className="text-purple-300 font-semibold mb-1">Special Cards</p>
+                <ul className="space-y-1">
+                  <li><span className="text-cyan-400 font-medium">❄️ Freeze</span> — force a target player to stop immediately, locking their current score.</li>
+                  <li><span className="text-orange-400 font-medium">🎴 Flip Three</span> — force a target player to draw 3 additional cards right now.</li>
+                  <li><span className="text-pink-400 font-medium">💖 Second Chance</span> — give a player a safety net: if they would bust on their next duplicate, the duplicate and this card are discarded instead of losing everything.</li>
+                </ul>
+              </div>
+
+              {/* Scoring */}
+              <div>
+                <p className="text-purple-300 font-semibold mb-1">Scoring Order</p>
+                <ol className="space-y-0.5 list-decimal list-inside">
+                  <li>Sum all number cards.</li>
+                  <li>Apply x2 if held (doubles the number total).</li>
+                  <li>Add all +X modifier cards.</li>
+                  <li>Add +15 if FLIP 7 was achieved.</li>
+                </ol>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>
