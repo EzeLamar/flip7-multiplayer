@@ -143,7 +143,7 @@ export function GameBoard({
       "drawCard",
       gameState.id,
       (response: { status: PlayerHandStatus }) => {
-        console.log(response);
+        setIsLoading(false);
         if (response.status === "useSecondChance") {
           playSound("useSecondChance");
         }
@@ -161,7 +161,7 @@ export function GameBoard({
   };
 
   useEffect(() => {
-    const handleGameStateUpdated = (updatedGameState: GameState) => {
+    const handleGameStateUpdated = ({ gameState: updatedGameState }: { gameState: GameState }) => {
       if (updatedGameState.id === gameState.id) {
         setIsLoading(false);
       }
