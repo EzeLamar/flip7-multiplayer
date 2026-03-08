@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
@@ -12,6 +12,15 @@ export function GameLobby() {
   const [gameId, setGameId] = useState("");
   const [view, setView] = useState<"join" | "create" | "game">("join");
   const { socket, gameState, createGame, joinGame, startGame } = useSocket();
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const roomParam = params.get("room");
+    if (roomParam) {
+      setGameId(roomParam);
+      setView("join");
+    }
+  }, []);
 
   const handleCreateGame = () => {
     if (!playerName) return;
