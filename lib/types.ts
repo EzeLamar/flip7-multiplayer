@@ -23,6 +23,12 @@ export interface Player {
   score: number;
 }
 
+export interface LastEvent {
+  type: "freeze" | "flip-three" | "second-chance" | "bust" | "flip7" | "stop";
+  targetName?: string;
+  sourceName?: string;
+}
+
 export interface GameState {
   id: string;
   round: number;
@@ -33,4 +39,5 @@ export interface GameState {
   direction: number;
   flipCount: number;
   status: "waiting" | "ready" | "playing" | "stopped" | "finished";
+  lastEvent: LastEvent | null;
 }
