@@ -21,7 +21,9 @@ export function PlayerInfo({
   handleClickCard = (_cardIndex: number) => {},
 }: PlayerInfoProps) {
   const isCurrentTurn = player.id === currentPlayer?.id;
-  const isStopped = player.status === "stop";
+  const isBusted = player.busted;
+  const isStopped = player.status === "stop" && !player.busted;
+  const isInactive = player.status === "stop"; // busted or voluntarily stopped
 
   return (
     <div
@@ -30,26 +32,40 @@ export function PlayerInfo({
         "border",
         // Base dark style
         "bg-white/5 backdrop-blur-sm border-white/10",
-        // Current player: neon purple pulse
-        isCurrentTurn && !isStopped && [
+        // Current player: neon purple pulse (only if actively playing)
+        isCurrentTurn && !isInactive && [
           "border-purple-400/70",
           "scale-[1.02]",
           "animate-neon-pulse",
         ],
-        // Stopped: red neon border, dimmed
-        isStopped && [
-          "border-red-500/50",
+        // Busted: vivid red border, dimmed — clearly out of the round
+        isBusted && [
+          "border-red-500/70",
           "opacity-60",
-          "shadow-[0_0_10px_rgba(239,68,68,0.2)]",
+          "shadow-[0_0_12px_rgba(239,68,68,0.3)]",
+        ],
+        // Voluntarily stopped: muted slate border, dimmed — finished for this round
+        isStopped && [
+          "border-slate-500/40",
+          "opacity-60",
         ],
         className
       )}
     >
+      {/* Busted badge */}
+      {isBusted && (
+        <div className="absolute top-2 right-2 z-10">
+          <span className="text-xs font-bold tracking-widest text-red-300 bg-red-500/25 border border-red-400/50 rounded-full px-2 py-0.5 uppercase">
+            💥 Busted!
+          </span>
+        </div>
+      )}
+
       {/* Stopped badge */}
       {isStopped && (
         <div className="absolute top-2 right-2 z-10">
-          <span className="text-xs font-bold tracking-widest text-red-400 bg-red-500/20 border border-red-500/40 rounded-full px-2 py-0.5 uppercase">
-            Stopped
+          <span className="text-xs font-bold tracking-widest text-slate-400 bg-slate-500/20 border border-slate-500/40 rounded-full px-2 py-0.5 uppercase">
+            🛑 Stopped
           </span>
         </div>
       )}
@@ -59,11 +75,11 @@ export function PlayerInfo({
         <div className="flex items-center gap-2 flex-wrap">
           <span className={cn(
             "text-base font-bold",
-            isStopped ? "text-gray-400" : "text-white"
+            isInactive ? "text-gray-400" : "text-white"
           )}>
             {player.name}
           </span>
-          {isCurrentTurn && !isStopped && (
+          {isCurrentTurn && !isInactive && (
             <span className="text-xs text-purple-300 bg-purple-500/20 border border-purple-500/40 rounded-full px-2 py-0.5 font-semibold">
               Your turn
             </span>
@@ -77,7 +93,7 @@ export function PlayerInfo({
         </div>
         <span className={cn(
           "text-xl font-black",
-          isStopped ? "text-gray-500" : "text-yellow-300"
+          isInactive ? "text-gray-500" : "text-yellow-300"
         )}>
           {player.score}
           <span className="text-xs font-medium text-gray-500 ml-1">pts</span>
@@ -92,7 +108,8 @@ export function PlayerInfo({
             card={card}
             onClick={() => handleClickCard(index)}
             isRepeated={
-              player.cards.filter((c) => c.value === card.value).length > 1
+              player.cards.filter((c) => c.value === card.value && c.type === "number").length > 1 &&
+              card.type === "number"
             }
             disabled={
               isDisableCardsSelection || player.id !== currentPlayer?.id
@@ -100,7 +117,7 @@ export function PlayerInfo({
             className="w-10 h-14"
           />
         ))}
-        {player.cards.length === 0 && player.status !== "stop" && (
+        {player.cards.length === 0 && !isInactive && (
           <span className="text-xs text-gray-600 italic py-1">No cards yet</span>
         )}
       </div>

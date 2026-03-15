@@ -101,6 +101,7 @@ export function handleDrawNumberCard(
       return "useSecondChance";
     }
 
+    player.busted = true;
     player.status = "stop";
     game.flipCount = 1;
     return "duplicates";
@@ -188,16 +189,20 @@ export function getNextPlayerIndex(game: GameState): number {
     return 0;
   }
 
+  // If already in round-ending state, return the already-computed next player
+  if (game.roundEnding) {
+    return game.currentPlayer;
+  }
+
+  // When all players have stopped, enter round-ending state instead of
+  // immediately resetting — cards stay visible until the first draw of the new round
   if (game.players.every((player) => player.status === "stop")) {
-    const discardedCards: Card[] = [];
-    game.players.forEach((player) => {
-      discardedCards.push(...player.cards);
-      player.cards = [];
-      player.lastDrawnCard = null;
-      player.status = "start";
-    });
-    game.discardPile = [...game.discardPile, ...discardedCards];
-    game.round += 1;
+    game.roundEnding = true;
+    // Compute which player draws first in the new round (circular order)
+    const len = game.players.length;
+    const nextIndex =
+      ((game.currentPlayer + game.direction) % len + len) % len;
+    return nextIndex;
   }
 
   const currentPlayerIndex = game.currentPlayer;

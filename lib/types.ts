@@ -21,6 +21,7 @@ export interface Player {
   status: PlayerStatus;
   secondChance: boolean;
   score: number;
+  busted: boolean;
 }
 
 export interface LastEvent {
@@ -41,4 +42,5 @@ export interface GameState {
   flipCount: number;
   status: "waiting" | "ready" | "playing" | "stopped" | "finished";
   lastEvent: LastEvent | null;
+  roundEnding: boolean;
 }

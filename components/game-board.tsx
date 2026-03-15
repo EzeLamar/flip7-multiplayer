@@ -119,6 +119,7 @@ export function GameBoard({
 
   const handlePlayCard = (cardIndex: number) => {
     if (!isCurrentPlayer) return;
+    if (gameState.roundEnding) return;
 
     const card = currentPlayer.cards[cardIndex];
     if (card.type === "special") {
@@ -219,6 +220,10 @@ export function GameBoard({
   };
 
   const blockStopButton = () => {
+    if (gameState.roundEnding) {
+      return true;
+    }
+
     if (gameState.flipCount > 1) {
       return true;
     }
@@ -393,7 +398,7 @@ export function GameBoard({
               onClick={handleDrawCard}
               disabled={
                 !isCurrentPlayer ||
-                currentPlayer.lastDrawnCard?.type === "special" ||
+                (!gameState.roundEnding && currentPlayer.lastDrawnCard?.type === "special") ||
                 isLoading
               }
               className={cn(

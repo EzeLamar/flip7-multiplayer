@@ -43,6 +43,7 @@ io.on("connection", (socket) => {
       status: "start",
       secondChance: false,
       score: 0,
+      busted: false,
     };
 
     const gameState: GameState = {
@@ -56,6 +57,7 @@ io.on("connection", (socket) => {
       flipCount: 1,
       round: 1,
       lastEvent: null,
+      roundEnding: false,
     };
 
     games.set(gameId, gameState);
@@ -83,6 +85,7 @@ io.on("connection", (socket) => {
       status: "start",
       secondChance: false,
       score: 0,
+      busted: false,
     };
 
     game.players.push(player);
@@ -151,6 +154,21 @@ io.on("connection", (socket) => {
     const currentPlayer = game.players[game.currentPlayer];
     if (currentPlayer.id !== socket.id) {
       return;
+    }
+
+    // Execute the deferred round transition: the previous round ended with all
+    // players stopped; clear their cards now that the first draw of the new round
+    // is happening, so the bust/stop display persists until this moment.
+    if (game.roundEnding) {
+      game.players.forEach((player) => {
+        game.discardPile.push(...player.cards);
+        player.cards = [];
+        player.lastDrawnCard = null;
+        player.status = "start";
+        player.busted = false;
+      });
+      game.round += 1;
+      game.roundEnding = false;
     }
 
     if (currentPlayer.status === "stop") {
