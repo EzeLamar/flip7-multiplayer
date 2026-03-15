@@ -8,6 +8,7 @@ import { toast } from "sonner";
 export function useSocket() {
   const [socket, setSocket] = useState<Socket | null>(null);
   const [gameState, setGameState] = useState<GameState | null>(null);
+  const [isCreatingRoom, setIsCreatingRoom] = useState(false);
 
   const SOCKET_URL =
     process.env.NEXT_PUBLIC_SOCKET_URL || "http://localhost:3001";
@@ -18,6 +19,7 @@ export function useSocket() {
 
     newSocket.on("gameCreated", ({ gameState }) => {
       setGameState(gameState);
+      setIsCreatingRoom(false);
       toast.success(`Game created! Share code: ${gameState.id}`);
     });
 
@@ -49,6 +51,7 @@ export function useSocket() {
   }, []);
 
   const createGame = (playerName: string) => {
+    setIsCreatingRoom(true);
     socket?.emit("createGame", playerName);
   };
 
@@ -63,6 +66,7 @@ export function useSocket() {
   return {
     socket,
     gameState,
+    isCreatingRoom,
     createGame,
     joinGame,
     startGame,
