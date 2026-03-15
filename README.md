@@ -2,7 +2,7 @@
 
 **Flip7 Multiplayer** is an online version of the *Flip7* card game that you can play with friends in real time.
 
-🔗 Live demo: [flip7‑multiplayer-z2lb.vercel.app](https://flip7-multiplayer-z2lb.vercel.app)
+🔗 Live demo: [flip7‑multiplayer-z2lb.vercel.app](https://flip7-multiplayer.vercel.app)
 
 ---
 
