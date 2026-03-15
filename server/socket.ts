@@ -30,6 +30,18 @@ const io = new Server(httpServer, {
 
 const games = new Map<string, GameState>();
 
+function checkGameOver(io: Server, gameId: string, game: GameState) {
+  if (
+    game.status === "finished" &&
+    game.players.every((p) => p.status === "stop")
+  ) {
+    const winner = game.players.reduce((best, p) =>
+      p.score > best.score ? p : best
+    );
+    io.to(gameId).emit("gameOver", { winner });
+  }
+}
+
 io.on("connection", (socket) => {
   console.log("Client connected:", socket.id);
 
@@ -139,6 +151,7 @@ io.on("connection", (socket) => {
     }
 
     io.to(gameId).emit("gameStateUpdated", { gameState: game });
+    checkGameOver(io, gameId, game);
   });
 
   socket.on("drawCard", (gameId: string, callback) => {
@@ -241,6 +254,7 @@ io.on("connection", (socket) => {
     currentPlayer.cards.push(newCard);
 
     io.to(gameId).emit("gameStateUpdated", { gameState: game });
+    checkGameOver(io, gameId, game);
 
     callback(callbackResponse);
   });
@@ -263,6 +277,7 @@ io.on("connection", (socket) => {
     game.lastEvent = { type: "stop", targetName: currentPlayer.name, pointsAdded: stopPointsAdded };
     game.currentPlayer = getNextPlayerIndex(game);
     io.to(gameId).emit("gameStateUpdated", { gameState: game });
+    checkGameOver(io, gameId, game);
   });
 
   socket.on("disconnect", () => {

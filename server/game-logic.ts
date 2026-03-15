@@ -184,11 +184,10 @@ export function handlePlaySpecialCard(
 }
 
 export function getNextPlayerIndex(game: GameState): number {
-  if (game.status === "finished") {
-    return 0;
-  }
-
   if (game.players.every((player) => player.status === "stop")) {
+    if (game.status === "finished") {
+      return 0;
+    }
     const discardedCards: Card[] = [];
     game.players.forEach((player) => {
       discardedCards.push(...player.cards);
