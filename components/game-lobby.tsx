@@ -23,7 +23,7 @@ const LOADING_MESSAGES = [
 ];
 
 /** Milliseconds between each loading message transition. */
-const LOADING_MESSAGE_INTERVAL_MS = 1500;
+const LOADING_MESSAGE_INTERVAL_MS = 2500;
 
 export function GameLobby() {
   const [playerName, setPlayerName] = useState("");
