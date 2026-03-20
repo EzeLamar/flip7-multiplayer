@@ -7,6 +7,11 @@ import { GameBoard } from "@/components/game-board";
 import { useSocket } from "@/hooks/use-socket";
 import { cn } from "@/lib/utils";
 
+/**
+ * Messages displayed sequentially while a game room is being created.
+ * Each message is shown for LOADING_MESSAGE_INTERVAL_MS before cycling to the next.
+ * Add or remove entries here to adjust the loading experience.
+ */
 const LOADING_MESSAGES = [
   "Shuffling the deck...",
   "Setting up the table...",
@@ -17,6 +22,9 @@ const LOADING_MESSAGES = [
   "Finding a good seat...",
 ];
 
+/** Milliseconds between each loading message transition. */
+const LOADING_MESSAGE_INTERVAL_MS = 1500;
+
 export function GameLobby() {
   const [playerName, setPlayerName] = useState("");
   const [gameId, setGameId] = useState("");
@@ -25,12 +33,17 @@ export function GameLobby() {
   const [loadingMsgIndex, setLoadingMsgIndex] = useState(0);
   const { socket, gameState, isCreatingRoom, createGame, joinGame, startGame } = useSocket();
 
+  /**
+   * Cycles through LOADING_MESSAGES at a fixed interval while the room is
+   * being created. Resets to the first message each time isCreatingRoom
+   * becomes true and clears the interval when it turns false.
+   */
   useEffect(() => {
     if (!isCreatingRoom) return;
     setLoadingMsgIndex(0);
     const interval = setInterval(() => {
       setLoadingMsgIndex((i) => (i + 1) % LOADING_MESSAGES.length);
-    }, 1500);
+    }, LOADING_MESSAGE_INTERVAL_MS);
     return () => clearInterval(interval);
   }, [isCreatingRoom]);
 
