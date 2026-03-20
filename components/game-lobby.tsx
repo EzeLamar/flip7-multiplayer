@@ -7,12 +7,32 @@ import { GameBoard } from "@/components/game-board";
 import { useSocket } from "@/hooks/use-socket";
 import { cn } from "@/lib/utils";
 
+const LOADING_MESSAGES = [
+  "Shuffling the deck...",
+  "Setting up the table...",
+  "Hiding the Freeze cards...",
+  "Calculating your luck...",
+  "Almost there...",
+  "Polishing the cards...",
+  "Finding a good seat...",
+];
+
 export function GameLobby() {
   const [playerName, setPlayerName] = useState("");
   const [gameId, setGameId] = useState("");
   const [view, setView] = useState<"join" | "create" | "game">("join");
   const [showRules, setShowRules] = useState(false);
+  const [loadingMsgIndex, setLoadingMsgIndex] = useState(0);
   const { socket, gameState, isCreatingRoom, createGame, joinGame, startGame } = useSocket();
+
+  useEffect(() => {
+    if (!isCreatingRoom) return;
+    setLoadingMsgIndex(0);
+    const interval = setInterval(() => {
+      setLoadingMsgIndex((i) => (i + 1) % LOADING_MESSAGES.length);
+    }, 1500);
+    return () => clearInterval(interval);
+  }, [isCreatingRoom]);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -58,7 +78,7 @@ export function GameLobby() {
           {/* Spinner + heading */}
           <div className="flex flex-col items-center gap-3 text-center">
             <div className="w-10 h-10 rounded-full border-4 border-purple-500/30 border-t-purple-400 animate-spin" />
-            <p className="text-purple-300 font-bold text-base tracking-wide">Creating your room…</p>
+            <p className="text-purple-300 font-bold text-base tracking-wide">{LOADING_MESSAGES[loadingMsgIndex]}</p>
             <p className="text-xs text-gray-400 leading-relaxed">
               The server is waking up — this can take up to a minute on first load.
               <br />
