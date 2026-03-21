@@ -45,15 +45,6 @@ export function PlayerInfo({
         className
       )}
     >
-      {/* Stopped badge */}
-      {isStopped && (
-        <div className="absolute top-2 right-2 z-10">
-          <span className="text-xs font-bold tracking-widest text-red-400 bg-red-500/20 border border-red-500/40 rounded-full px-2 py-0.5 uppercase">
-            Stopped
-          </span>
-        </div>
-      )}
-
       {/* Header row */}
       <div className="flex justify-between items-center mb-2">
         <div className="flex items-center gap-2 flex-wrap">
@@ -66,6 +57,11 @@ export function PlayerInfo({
           {isCurrentTurn && !isStopped && (
             <span className="text-xs text-purple-300 bg-purple-500/20 border border-purple-500/40 rounded-full px-2 py-0.5 font-semibold">
               Your turn
+            </span>
+          )}
+          {isStopped && (
+            <span className="text-xs font-bold tracking-widest text-red-400 bg-red-500/20 border border-red-500/40 rounded-full px-2 py-0.5 uppercase">
+              Stopped
             </span>
           )}
           {player.secondChance && (
