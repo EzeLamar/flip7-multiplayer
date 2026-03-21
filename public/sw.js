@@ -33,24 +33,27 @@ self.addEventListener('fetch', (event) => {
         return fetch(event.request).then((response) => {
           if (response && response.status === 200 && response.type === 'basic') {
             const clone = response.clone();
-            caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
+            event.waitUntil(
+              caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone))
+            );
           }
           return response;
         });
       })
     );
-  } else {
-    // Network-first: always fetch fresh HTML so new deploys are picked up immediately
-    event.respondWith(
-      fetch(event.request)
-        .then((response) => {
-          if (response && response.status === 200 && response.type === 'basic') {
-            const clone = response.clone();
-            caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
-          }
-          return response;
-        })
-        .catch(() => caches.match(event.request))
-    );
+  } else if (event.request.mode === 'navigate') {
+    // Network-first: only for HTML navigation requests so new deploys are picked up immediately
+    const networkFirst = fetch(event.request).then((response) => {
+      if (response && response.status === 200 && response.type === 'basic') {
+        const clone = response.clone();
+        event.waitUntil(
+          caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone))
+        );
+      }
+      return response;
+    });
+
+    event.respondWith(networkFirst.catch(() => caches.match(event.request)));
   }
+  // All other same-origin requests are not intercepted — browser handles them normally
 });
