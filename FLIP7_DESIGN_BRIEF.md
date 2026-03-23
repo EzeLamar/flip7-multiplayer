@@ -1,271 +1,271 @@
-# Flip7 Multiplayer — Design Brief para Google Stitch
+# Flip7 Multiplayer — Design Brief for Google Stitch
 
-## Propósito del Proyecto
+## Project Purpose
 
-**Flip7 Multiplayer** es un juego de cartas en tiempo real para múltiples jugadores, jugable directamente desde el navegador sin instalación. El objetivo es acumular la mayor cantidad de puntos posible sin "pasarse" (bust), mientras compites simultáneamente con otros 2 a 6 jugadores en la misma sala.
+**Flip7 Multiplayer** is a real-time multiplayer card game playable directly in the browser, no installation required. The goal is to accumulate the highest score possible without "busting," while competing simultaneously with 2 to 6 players in the same room.
 
-El juego está orientado a sesiones cortas e informales (10–20 minutos), ideal para grupos de amigos que quieran jugar desde sus celulares o computadoras sin necesidad de cuenta ni registro.
+The game targets short, casual sessions (10–20 minutes), ideal for groups of friends playing from their phones or computers without needing an account or registration.
 
 ---
 
-## Mecánicas de Juego
+## Game Mechanics
 
-### Flujo básico
-1. Un jugador crea una sala y comparte el código de invitación.
-2. Los demás jugadores se unen con ese código.
-3. Por turnos, cada jugador decide si **robar una carta** o **detenerse**.
-4. Robar un número repetido significa **bust**: se pierden todas las cartas acumuladas en la ronda.
-5. Al terminar la ronda, los jugadores que se detuvieron a tiempo suman puntos.
-6. El primero en llegar a **200 puntos** gana la partida.
+### Basic flow
+1. A player creates a room and shares the invite code.
+2. Other players join using that code.
+3. On each turn, the active player decides to **draw a card** or **stop**.
+4. Drawing a duplicate number causes a **bust**: all cards accumulated in the round are lost.
+5. At the end of each round, players who stopped in time score points.
+6. The first player to reach **200 points** wins the game.
 
-### Tipos de cartas
-| Tipo | Ejemplos | Efecto |
+### Card types
+| Type | Examples | Effect |
 |------|----------|--------|
-| **Número** | 0 al 12 | Suma su valor al puntaje |
-| **Modificador** | +2, +4, +6, +8, +10, ×2 | Modifica el puntaje total |
-| **Especial** | Freeze, Flip Three, Second Chance | Efectos sobre jugadores |
+| **Number** | 0 through 12 | Adds face value to score |
+| **Modifier** | +2, +4, +6, +8, +10, ×2 | Modifies the total score |
+| **Special** | Freeze, Flip Three, Second Chance | Effects targeting players |
 
-### Cartas especiales
-- **Freeze (❄️):** Congela a un jugador objetivo; su puntaje queda bloqueado.
-- **Flip Three (🎴):** Obliga a un jugador objetivo a robar 3 cartas adicionales.
-- **Second Chance (💖):** Salva al poseedor de un bust (se activa automáticamente).
-- **Flip7 (🌈):** Conseguir los 7 números distintos da +15 puntos de bonus y para automáticamente al jugador.
-
----
-
-## Estados de la Interfaz
-
-La UI tiene 5 estados distintos, cada uno con necesidades visuales diferentes:
-
-| Estado | Descripción | Pantalla principal |
-|--------|-------------|-------------------|
-| `waiting` | Sala creada, esperando jugadores | Lista de jugadores + código de sala + reglas |
-| `ready` | Todos listos, el host puede iniciar | Botón "Iniciar partida" activo |
-| `playing` | Turno activo | Mano del jugador + botones Robar/Parar + manos de oponentes |
-| `stopped` | Ronda terminada, conteo de puntajes | Manos bloqueadas, puntajes visibles |
-| `finished` | Partida terminada | Pantalla de ganador con ranking final |
+### Special cards
+- **Freeze (❄️):** Freezes a target player; their current score is locked in.
+- **Flip Three (🎴):** Forces a target player to draw 3 additional cards.
+- **Second Chance (💖):** Saves the holder from one bust (activates automatically).
+- **Flip7 (🌈):** Collecting all 7 unique number cards grants +15 bonus points and auto-stops the player.
 
 ---
 
-## Estructura de la UI (Componentes Clave)
+## UI States
 
-### Lobby (crear/unirse)
-- Formulario de nombre de jugador
-- Toggle: "Crear sala" / "Unirse a sala"
-- Campo para ingresar código de sala
-- Sección expandible "Cómo jugar" con reglas
+The interface has 5 distinct states, each with different visual requirements:
 
-### Tablero de Juego
-1. **Barra superior:** Ronda actual, código de sala, botón de invitar
-2. **Mano del jugador activo:** Cartas actuales + puntaje + indicador de turno
-3. **Manos de oponentes:** Cards de cada jugador con estado y puntaje
-4. **Zona de controles:** Botón Robar y botón Parar
-5. **Indicador de Force Draw:** Aparece si hay un Flip Three activo (naranja pulsante)
-
-### Modales / Overlays
-- **Selección de víctima:** Al jugar una carta especial, aparece un overlay para elegir target
-- **Notificación de evento:** Aparece centrada 2.5s para anunciar bust, flip7, freeze, etc.
-- **Pantalla de victoria:** Pantalla completa con ranking y confetti animado
+| State | Description | Main screen |
+|-------|-------------|-------------|
+| `waiting` | Room created, waiting for players | Player list + room code + rules |
+| `ready` | All joined, host can start | "Start Game" button active |
+| `playing` | Active turn | Player hand + Draw/Stop buttons + opponent hands |
+| `stopped` | Round ended, scores tallied | Hands locked, scores visible |
+| `finished` | Game over | Winner screen with final ranking |
 
 ---
 
-## Estética Actual (Referencia de Rediseño)
+## UI Structure (Key Components)
 
-### Paleta de colores actual
-El juego actualmente usa un **tema arcade neon oscuro:**
+### Lobby (create/join)
+- Player name input
+- Toggle: "Create Room" / "Join Room"
+- Room code input field
+- Expandable "How to Play" section with game rules
+
+### Game Board
+1. **Top bar:** Current round, room code, invite button
+2. **Active player's hand:** Current cards + score + turn indicator
+3. **Opponent hands:** Card for each opponent showing hand and score
+4. **Action area:** Draw button and Stop button
+5. **Force Draw indicator:** Appears when Flip Three is active (pulsing orange)
+
+### Modals / Overlays
+- **Victim selection:** When playing a special card, an overlay appears to choose the target
+- **Event notification:** Appears centered for 2.5s to announce busts, flip7, freeze, etc.
+- **Victory screen:** Full-screen overlay with ranking and animated confetti
+
+---
+
+## Current Aesthetic (Redesign Reference)
+
+### Current color palette
+The game currently uses a **dark neon arcade theme:**
 
 ```
-Fondo principal:   hsl(220, 15%, 6%)    — Azul-gris muy oscuro
-Texto principal:   hsl(0, 0%, 95%)      — Casi blanco
-Tarjeta/Surface:   hsl(220, 15%, 10%)   — Levemente más claro
-Primario:          hsl(270, 100%, 70%)  — Púrpura neón brillante
-Acento:            hsl(270, 80%, 60%)   — Púrpura más apagado
-Destructivo:       hsl(0, 90%, 55%)     — Rojo brillante
+Main background:   hsl(220, 15%, 6%)    — Very dark blue-gray
+Main text:         hsl(0, 0%, 95%)      — Near white
+Card/surface:      hsl(220, 15%, 10%)   — Slightly lighter dark
+Primary:           hsl(270, 100%, 70%)  — Bright neon purple
+Accent:            hsl(270, 80%, 60%)   — Muted purple
+Destructive:       hsl(0, 90%, 55%)     — Bright red
 ```
 
-**Colores neón secundarios usados:**
-- Cian (`#06B6D4`) — botón de robar carta, efectos freeze
-- Rosa (`#EC4899`) — carta Second Chance
-- Verde (`#22C55E`) — acciones positivas
-- Amarillo (`#EAB308`) — modificadores, puntaje activo
-- Naranja (`#F97316`) — Flip Three
-- Azul (`#3B82F6`) — highlights de UI
+**Secondary neon colors in use:**
+- Cyan (`#06B6D4`) — Draw button, freeze effects
+- Pink (`#EC4899`) — Second Chance card
+- Green (`#22C55E`) — Positive actions
+- Yellow (`#EAB308`) — Modifiers, active score
+- Orange (`#F97316`) — Flip Three
+- Blue (`#3B82F6`) — UI highlights
 
-### Sistema de cartas por colores
-Cada número del 0 al 12 tiene un gradiente y glow propio:
-| Valor | Color |
+### Card color system
+Each number from 0 to 12 has a unique gradient and glow:
+| Value | Color |
 |-------|-------|
-| 0 | Rose/Rosa |
-| 1 | Amber/Ámbar |
-| 2 | Lime/Lima |
-| 3 | Cyan/Cian |
-| 4 | Indigo/Índigo |
-| 5 | Teal/Verde azulado |
-| 6 | Orange/Naranja |
-| 7 | Pink/Rosa fuerte |
-| 8 | Purple/Púrpura |
-| 9 | Yellow/Amarillo |
-| 10 | Green/Verde |
-| 11 | Blue/Azul |
-| 12 | Red/Rojo |
+| 0 | Rose |
+| 1 | Amber |
+| 2 | Lime |
+| 3 | Cyan |
+| 4 | Indigo |
+| 5 | Teal |
+| 6 | Orange |
+| 7 | Pink |
+| 8 | Purple |
+| 9 | Yellow |
+| 10 | Green |
+| 11 | Blue |
+| 12 | Red |
 
 ---
 
-## Patrones Visuales a Considerar en el Rediseño
+## Visual Patterns to Consider in the Redesign
 
-### Efectos actuales
-- **Glassmorphism:** Fondos semi-transparentes + `backdrop-blur` en superficies
-- **Neon glow:** Todos los elementos interactivos tienen `box-shadow` de color
-- **Gradientes en cartas:** Cada carta tiene un gradiente diagonal único
-- **Brillo superficial:** Overlay blanco diagonal para simular luz en cartas
-- **Animaciones ambiente:** Pulso neón (2s infinito) en el jugador activo
+### Current effects
+- **Glassmorphism:** Semi-transparent backgrounds + `backdrop-blur` on surfaces
+- **Neon glow:** All interactive elements have colored `box-shadow`
+- **Card gradients:** Each card has a unique diagonal gradient
+- **Surface shine:** Diagonal white overlay simulating light reflection on cards
+- **Ambient animations:** Neon pulse (2s infinite) on the active player
 
-### Jerarquía visual (de mayor a menor prominencia)
-1. Notificaciones de evento (z-50, centradas, grandes)
-2. Modal de selección de víctima (z-40, overlay oscuro)
-3. Pantalla de victoria (z-40, full-screen)
-4. Controles del jugador (botones prominentes, centrados)
-5. Barra de info de la partida
-6. Mano del jugador actual (primer plano visual, glow púrpura)
-7. Manos de oponentes (secundario, sin interacción)
+### Visual hierarchy (highest to lowest prominence)
+1. Event notifications (z-50, centered, large)
+2. Victim selection modal (z-40, dark overlay)
+3. Victory screen (z-40, full-screen)
+4. Player controls (prominent buttons, centered)
+5. Game info bar
+6. Current player's hand (visual foreground, purple glow)
+7. Opponent hands (secondary, non-interactive)
 
-### Indicadores de estado
-| Estado | Señal visual |
-|--------|-------------|
-| Turno activo | Borde púrpura + glow + animación pulso |
-| Jugador detenido | 60% opacidad + borde rojo + badge "STOPPED" |
-| Second Chance activo | Ícono de corazón rojo pulsante |
-| Force Draw activo | Indicador naranja pulsante con conteo |
-| Bust | Animación de shake en carta + overlay rojo |
-
----
-
-## Consideraciones para Diseño Mobile
-
-### Contexto de uso mobile
-- La mayoría de las sesiones serán en celular (juegos casuales entre amigos)
-- Se comparte un link/código QR para invitar a jugadores
-- Los jugadores usan una mano para sostener el teléfono mientras juegan
-
-### Restricciones de espacio
-- La pantalla debe mostrar simultáneamente:
-  - Tu propia mano (potencialmente 7+ cartas)
-  - Hasta 5 oponentes (con sus manos y puntajes)
-  - Botones de acción (Robar / Parar)
-- Las cartas son pequeñas (`40×56px` actualmente) para caber en pantalla
-- Las manos de las cartas usan `flex-wrap` para desbordarse en múltiples líneas
-
-### Recomendaciones para mobile
-- **Tap targets mínimos:** 44×44px para botones (WCAG AA)
-- **Scroll vertical:** La lista de jugadores debe ser scrollable; los controles deben estar fijos abajo o ser siempre visibles
-- **Sin hover:** Los estados de interacción deben comunicarse sin depender de hover
-- **Thumb zone:** Los botones Robar y Parar deben estar en la mitad inferior de la pantalla
-- **Legibilidad de números:** Los valores de cartas deben ser legibles sin zoom
-- **Modo landscape:** Considerar un layout alternativo que aproveche el ancho
-- **Modales:** Deben cubrir pantalla completa o la mayor parte en mobile, no flotar como en desktop
-
-### Gestos potenciales a soportar
-- Tap en carta para seleccionarla (al jugar especial)
-- Swipe up para revelar historial o reglas
-- Tap en código de sala para copiar al portapapeles
+### Status indicators
+| State | Visual signal |
+|-------|--------------|
+| Active turn | Purple border + glow + pulse animation |
+| Player stopped | 60% opacity + red border + "STOPPED" badge |
+| Second Chance active | Pulsing red heart icon |
+| Force Draw active | Pulsing orange indicator with countdown |
+| Bust | Shake animation on card + red centered overlay |
 
 ---
 
-## Consideraciones para Diseño Desktop
+## Mobile Design Considerations
 
-### Contexto de uso desktop
-- Más raro, generalmente en pantallas 1280px o más
-- Posibilidad de ver más información simultáneamente
-- Uso de mouse con hover states
+### Mobile usage context
+- Most sessions will be on mobile (casual games between friends)
+- Players share a link or QR code to invite others
+- Players typically hold the phone with one hand while playing
 
-### Oportunidades en desktop
-- **Layout multi-columna:** Panel izquierdo con info de la partida + área central de juego + panel derecho con oponentes
-- **Mayor tamaño de cartas:** Las cartas pueden ser más grandes y mostrar más detalle
-- **Tooltips:** Hover sobre cartas puede mostrar nombre y descripción de la carta
-- **Sidebar de historial:** Historial de eventos de la partida visible al costado
-- **Keyboard shortcuts:** Teclas para Robar (Space/Enter) y Parar (S/Esc)
-- **Hover sobre oponentes:** Mostrar detalle al pasar el mouse sobre la mano de un oponente
+### Space constraints
+The screen must simultaneously show:
+- The player's own hand (potentially 7+ cards)
+- Up to 5 opponents (with their hands and scores)
+- Action buttons (Draw / Stop)
+- Cards are small (`40×56px` currently) to fit on screen
+- Card hands use `flex-wrap` to flow into multiple lines
 
-### Breakpoints sugeridos
+### Mobile recommendations
+- **Minimum tap targets:** 44×44px for buttons (WCAG AA compliance)
+- **Vertical scroll:** The player list must be scrollable; controls must always be visible
+- **No hover dependency:** Interactive states must communicate without relying on hover
+- **Thumb zone:** Draw and Stop buttons should be in the bottom half of the screen
+- **Card number legibility:** Card values must be readable without zooming
+- **Landscape mode:** Consider an alternative layout that takes advantage of the wider viewport
+- **Modals:** Should cover the full screen or most of it on mobile, not float like on desktop
+
+### Potential gestures to support
+- Tap a card to select it (when playing a special card)
+- Swipe up to reveal event history or rules
+- Tap on the room code to copy it to clipboard
+
+---
+
+## Desktop Design Considerations
+
+### Desktop usage context
+- Less common; typically on screens 1280px or wider
+- Opportunity to display more information simultaneously
+- Mouse usage enables hover states
+
+### Desktop opportunities
+- **Multi-column layout:** Left panel with game info + central play area + right panel with opponents
+- **Larger cards:** Cards can be bigger and show more detail
+- **Tooltips:** Hovering over cards can show the card name and description
+- **Event history sidebar:** Live event log visible on the side
+- **Keyboard shortcuts:** Keys to Draw (Space/Enter) and Stop (S/Esc)
+- **Opponent hover:** Show hand detail when hovering over an opponent
+
+### Suggested breakpoints
 | Breakpoint | Layout |
 |------------|--------|
-| `< 640px` | Single column, cartas pequeñas, controles fijos abajo |
-| `640–1024px` | Single column ampliado, cartas medianas |
-| `> 1024px` | Multi-columna: sidebar de oponentes + área central |
+| `< 640px` | Single column, small cards, fixed controls at bottom |
+| `640–1024px` | Wider single column, medium cards |
+| `> 1024px` | Multi-column: opponent sidebar + central play area |
 
 ---
 
-## Feedback Visual y Sonoro
+## Visual and Audio Feedback
 
-### Feedback visual por evento
-| Evento | Visual |
-|--------|--------|
-| Carta robada | Animación `card-appear` (escala + rotación) |
-| Número duplicado (bust) | Animación `shake` en carta + overlay rojo centrado |
-| Flip7 logrado | Overlay de celebración multicolor |
-| Carta especial jugada | Overlay de selección de víctima + notificación |
-| Freeze | Overlay cian centrado |
-| Flip Three | Overlay naranja + fuerza 3 robos |
-| Juego terminado | Confetti animado + pantalla de ranking |
+### Visual feedback per event
+| Event | Visual |
+|-------|--------|
+| Card drawn | `card-appear` animation (scale + rotation) |
+| Duplicate number (bust) | `shake` animation on card + red centered overlay |
+| Flip7 achieved | Multi-color celebration overlay |
+| Special card played | Victim selection overlay + event notification |
+| Freeze | Cyan centered overlay |
+| Flip Three | Orange overlay + forces 3 draws |
+| Game over | Animated confetti + ranking screen |
 
-### Feedback sonoro (mapeo actual)
-| Evento | Sonido |
-|--------|--------|
-| Robar carta normal | draw.mp3 |
-| Detenerse | stop.mp3 |
+### Audio feedback (current mapping)
+| Event | Sound |
+|-------|-------|
+| Draw normal card | draw.mp3 |
+| Stop drawing | stop.mp3 |
 | Bust | duplicates.mp3 |
 | Flip7 | flip7.mp3 |
-| Carta especial obtenida | special.mp3 |
-| Second Chance recibida | extra-life.mp3 |
-| Second Chance activada | cure.mp3 |
-| Freeze jugado | freeze.wav |
-| Flip Three jugado | flip3.mp3 |
-| Victoria | win.mp3 |
+| Special card obtained | special.mp3 |
+| Second Chance received | extra-life.mp3 |
+| Second Chance activated | cure.mp3 |
+| Freeze played | freeze.wav |
+| Flip Three played | flip3.mp3 |
+| Victory | win.mp3 |
 
-> Los sonidos son un componente de immersión importante. El rediseño debe mantener el mapeado de eventos → feedback auditivo.
-
----
-
-## Identidad y Tono
-
-### Personalidad del juego
-- **Arcade casual:** No es un juego serio ni competitivo extremo; es para pasar el rato
-- **Sorpresa y drama:** El bust y el Flip7 son momentos de alto impacto emocional
-- **Social:** La diversión viene de ver a otros perder (o salvarse) en tiempo real
-- **Accesible:** Sin necesidad de cuenta, registro ni instalación
-
-### Tono visual sugerido para el rediseño
-- Mantener **energía y vibrancy** — este no es un juego minimalista serio
-- Las cartas deben ser **visualmente distintas** entre sí (los colores ayudan mucho)
-- Los momentos de victoria/bust merecen **celebración visual exagerada**
-- La UI de espera (lobby) puede ser más tranquila; la UI de juego debe tener más tensión visual
-
-### Palabras clave de diseño
-`neón`, `arcade`, `vibrante`, `oscuro`, `emocionante`, `casual`, `cartas`, `multijugador`, `colores`, `inmersivo`
+> Sound effects are a key immersion component. The redesign should preserve the event → audio feedback mapping.
 
 ---
 
-## Resumen de Requisitos para el Design System
+## Identity and Tone
 
-Para generar un design system completo con Stitch, se necesitan tokens y componentes para:
+### Game personality
+- **Casual arcade:** Not a serious or hyper-competitive game; meant for fun
+- **Surprise and drama:** Busts and Flip7 are high-impact emotional moments
+- **Social:** The fun comes from watching others lose (or survive) in real time
+- **Accessible:** No account, registration, or installation required
 
-### Tokens necesarios
-- [ ] Color palette: backgrounds, surfaces, texto, primarios, semánticos (error, warning, success, info)
-- [ ] Gradientes por cada carta (13 números + 3 especiales + modificadores)
-- [ ] Efectos de sombra/glow por color
-- [ ] Tipografía: jerarquía (heading, body, label, mono para código de sala)
+### Suggested visual tone for the redesign
+- Maintain **energy and vibrancy** — this is not a minimalist or serious game
+- Cards must be **visually distinct** from each other (color coding is essential)
+- Victory and bust moments deserve **exaggerated visual celebration**
+- Lobby/waiting UI can be calmer; the game UI should have higher visual tension
+
+### Design keywords
+`neon`, `arcade`, `vibrant`, `dark`, `exciting`, `casual`, `cards`, `multiplayer`, `colorful`, `immersive`
+
+---
+
+## Design System Requirements Summary
+
+To generate a complete design system with Stitch, tokens and components are needed for:
+
+### Required tokens
+- [ ] Color palette: backgrounds, surfaces, text, primaries, semantic colors (error, warning, success, info)
+- [ ] Gradients per card (13 numbers + 3 specials + modifiers)
+- [ ] Shadow/glow effects per color
+- [ ] Typography: hierarchy (heading, body, label, mono for room code)
 - [ ] Spacing scale
-- [ ] Border radius (el actual usa `0.75rem`)
-- [ ] Animaciones: durations, easings, keyframes para los 10 tipos de animaciones
+- [ ] Border radius (current uses `0.75rem`)
+- [ ] Animations: durations, easings, keyframes for the 10 animation types
 
-### Componentes necesarios
-- [ ] **PlayingCard** — variantes: número, especial, modificador; estados: normal, hover, selected, disabled, duplicate
-- [ ] **PlayerInfo** — estados: activo, detenido, turno actual
-- [ ] **GameButton** — variantes: draw (cian), stop (rojo), primary (púrpura), secondary
-- [ ] **StatusBadge** — variantes: tu-turno, detenido, second-chance
-- [ ] **EventNotification** — overlay de evento con variantes por tipo
-- [ ] **VictimModal** — modal de selección con lista de jugadores
-- [ ] **WinScreen** — pantalla de victoria con ranking y confetti
-- [ ] **Lobby** — formulario de crear/unirse + panel de reglas
-- [ ] **GameInfoBar** — barra superior con round, código, invitar
-- [ ] **ForceDrawIndicator** — indicador de flip three pendiente
+### Required components
+- [ ] **PlayingCard** — variants: number, special, modifier; states: normal, hover, selected, disabled, duplicate
+- [ ] **PlayerInfo** — states: active, stopped, current turn
+- [ ] **GameButton** — variants: draw (cyan), stop (red), primary (purple), secondary
+- [ ] **StatusBadge** — variants: your-turn, stopped, second-chance
+- [ ] **EventNotification** — event overlay with variants per event type
+- [ ] **VictimModal** — selection modal with player list
+- [ ] **WinScreen** — victory screen with ranking and confetti
+- [ ] **Lobby** — create/join form + rules panel
+- [ ] **GameInfoBar** — top bar with round number, room code, invite button
+- [ ] **ForceDrawIndicator** — pending Flip Three indicator
