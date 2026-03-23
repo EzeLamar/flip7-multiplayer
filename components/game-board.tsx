@@ -15,7 +15,7 @@ import { toast } from "sonner";
 import { PlayerInfo } from "@/components/ui/gamerInfo";
 import { cn } from "@/lib/utils";
 import { soundMappings, SoundKey } from "@/utils/soundMappings";
-import { Copy, Users } from "lucide-react";
+import { Copy, Users, Volume2, VolumeX } from "lucide-react";
 
 interface GameBoardProps {
   gameState: GameState;
@@ -79,6 +79,7 @@ export function GameBoard({
   const [selectedCard, setSelectedCard] = useState<Card | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isPlaying, setIsPlaying] = useState<SoundKey | null>(null);
+  const [soundEnabled, setSoundEnabled] = useState(true);
   const [broadcastEvent, setBroadcastEvent] = useState<LastEvent | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const prevLastEventRef = useRef<LastEvent | null>(null);
@@ -256,6 +257,7 @@ export function GameBoard({
   };
 
   const playSound = (soundKey: SoundKey) => {
+    if (!soundEnabled) return;
     if (audioRef.current) {
       audioRef.current.src = soundMappings[soundKey];
       audioRef.current.currentTime = 0;
@@ -360,6 +362,21 @@ export function GameBoard({
                   Invite
                 </Button>
               )}
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => setSoundEnabled((prev) => !prev)}
+                className={cn(
+                  "gap-1.5 text-xs transition-colors",
+                  soundEnabled
+                    ? "text-cyan-300 border-cyan-500/50 hover:bg-cyan-500/20 hover:text-cyan-200 hover:border-cyan-400"
+                    : "text-gray-500 border-gray-600/50 hover:bg-gray-700/30 hover:text-gray-300"
+                )}
+                title={soundEnabled ? "Mute sounds" : "Unmute sounds"}
+              >
+                {soundEnabled ? <Volume2 className="w-3 h-3" /> : <VolumeX className="w-3 h-3" />}
+                {soundEnabled ? "Sound" : "Muted"}
+              </Button>
             </div>
           </div>
         </div>
