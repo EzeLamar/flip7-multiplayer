@@ -1,0 +1,41 @@
+# CodeRabbit AI Code Review Configuration
+# Documentation: https://docs.coderabbit.ai/guides/configure-coderabbit
+
+reviews:
+  # High-level summary of the entire PR shown at the top of the review
+  high_level_summary: true
+
+  # Include the high-level summary inside the walkthrough section
+  high_level_summary_in_walkthrough: true
+
+  # Generate sequence diagrams to illustrate code flows and interactions
+  sequence_diagrams: true
+
+  # Review profile: chill | assertive
+  profile: "assertive"
+
+  # Automatically request reviews on new PRs
+  request_changes_workflow: false
+
+  poem: false
+
+  # Collapse walkthrough for large PRs
+  collapse_walkthrough: false
+
+  tools:
+    # Enable all static analysis tools
+    github-checks:
+      enabled: true
+
+  auto_review:
+    enabled: true
+    # Also review draft PRs
+    drafts: false
+    # Ignore specific patterns (e.g. generated files, lockfiles)
+    ignore_title_keywords:
+      - "WIP"
+      - "DO NOT MERGE"
+
+chat:
+  # Allow CodeRabbit to reply in review comment threads
+  auto_reply: true
