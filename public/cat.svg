@@ -1,0 +1,55 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200">
+  <!-- Body -->
+  <ellipse cx="100" cy="140" rx="55" ry="45" fill="#f4a261"/>
+
+  <!-- Head -->
+  <circle cx="100" cy="85" r="40" fill="#f4a261"/>
+
+  <!-- Ears -->
+  <polygon points="65,55 55,20 85,50" fill="#f4a261"/>
+  <polygon points="135,55 145,20 115,50" fill="#f4a261"/>
+  <!-- Inner ears -->
+  <polygon points="67,52 60,28 82,50" fill="#e76f51"/>
+  <polygon points="133,52 140,28 118,50" fill="#e76f51"/>
+
+  <!-- Eyes -->
+  <ellipse cx="85" cy="80" rx="10" ry="12" fill="#2d6a4f"/>
+  <ellipse cx="115" cy="80" rx="10" ry="12" fill="#2d6a4f"/>
+  <ellipse cx="85" cy="81" rx="5" ry="9" fill="#1b1b2f"/>
+  <ellipse cx="115" cy="81" rx="5" ry="9" fill="#1b1b2f"/>
+  <!-- Eye shine -->
+  <circle cx="88" cy="77" r="2.5" fill="white"/>
+  <circle cx="118" cy="77" r="2.5" fill="white"/>
+
+  <!-- Nose -->
+  <polygon points="100,93 96,98 104,98" fill="#e76f51"/>
+
+  <!-- Mouth -->
+  <path d="M96,98 Q90,105 85,102" stroke="#1b1b2f" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+  <path d="M104,98 Q110,105 115,102" stroke="#1b1b2f" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+
+  <!-- Whiskers left -->
+  <line x1="60" y1="94" x2="90" y2="97" stroke="#555" stroke-width="1.2"/>
+  <line x1="58" y1="100" x2="90" y2="100" stroke="#555" stroke-width="1.2"/>
+  <line x1="60" y1="106" x2="90" y2="103" stroke="#555" stroke-width="1.2"/>
+
+  <!-- Whiskers right -->
+  <line x1="140" y1="94" x2="110" y2="97" stroke="#555" stroke-width="1.2"/>
+  <line x1="142" y1="100" x2="110" y2="100" stroke="#555" stroke-width="1.2"/>
+  <line x1="140" y1="106" x2="110" y2="103" stroke="#555" stroke-width="1.2"/>
+
+  <!-- Front paws -->
+  <ellipse cx="75" cy="178" rx="18" ry="10" fill="#f4a261"/>
+  <ellipse cx="125" cy="178" rx="18" ry="10" fill="#f4a261"/>
+
+  <!-- Tail -->
+  <path d="M155,150 Q185,120 175,90 Q165,70 155,85" stroke="#f4a261" stroke-width="12" fill="none" stroke-linecap="round"/>
+
+  <!-- Stripes on body -->
+  <path d="M75,125 Q100,118 125,125" stroke="#e76f51" stroke-width="2" fill="none"/>
+  <path d="M70,138 Q100,130 130,138" stroke="#e76f51" stroke-width="2" fill="none"/>
+
+  <!-- Forehead stripes -->
+  <path d="M92,55 Q100,50 108,55" stroke="#e76f51" stroke-width="1.5" fill="none"/>
+  <path d="M90,63 Q100,57 110,63" stroke="#e76f51" stroke-width="1.5" fill="none"/>
+</svg>
