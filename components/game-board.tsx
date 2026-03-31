@@ -16,6 +16,7 @@ import { PlayerInfo } from "@/components/ui/gamerInfo";
 import { cn } from "@/lib/utils";
 import { soundMappings, SoundKey } from "@/utils/soundMappings";
 import { Copy, Users, Volume2, VolumeX } from "lucide-react";
+import { useLanguage } from "@/components/language-provider";
 
 interface GameBoardProps {
   gameState: GameState;
@@ -23,59 +24,61 @@ interface GameBoardProps {
   handleRestartGame: () => void;
 }
 
-const EVENT_CONFIG: Record<
-  LastEvent["type"],
-  { emoji: string; label: (e: LastEvent) => string; bg: string; border: string; glow: string }
-> = {
-  freeze: {
-    emoji: "❄️",
-    label: (e) => `${e.targetName} was FROZEN by ${e.sourceName}!`,
-    bg: "bg-blue-900/80",
-    border: "border-cyan-400/60",
-    glow: "shadow-[0_0_40px_rgba(6,182,212,0.5)]",
-  },
-  "flip-three": {
-    emoji: "🎴",
-    label: (e) => `${e.targetName} must draw 3 cards!`,
-    bg: "bg-orange-900/80",
-    border: "border-orange-400/60",
-    glow: "shadow-[0_0_40px_rgba(249,115,22,0.5)]",
-  },
-  "second-chance": {
-    emoji: "💖",
-    label: (e) => `${e.targetName} got Second Chance!`,
-    bg: "bg-pink-900/80",
-    border: "border-pink-400/60",
-    glow: "shadow-[0_0_40px_rgba(236,72,153,0.5)]",
-  },
-  bust: {
-    emoji: "💥",
-    label: (e) => `${e.targetName} BUSTED!`,
-    bg: "bg-red-900/80",
-    border: "border-red-400/60",
-    glow: "shadow-[0_0_40px_rgba(239,68,68,0.6)]",
-  },
-  flip7: {
-    emoji: "🌈",
-    label: (e) => `${e.targetName} got FLIP 7! +15 bonus!`,
-    bg: "bg-purple-900/80",
-    border: "border-purple-400/60",
-    glow: "shadow-[0_0_50px_rgba(168,85,247,0.7)]",
-  },
-  stop: {
-    emoji: "🛑",
-    label: (e) => `${e.targetName} stopped drawing!`,
-    bg: "bg-gray-900/80",
-    border: "border-teal-400/60",
-    glow: "shadow-[0_0_30px_rgba(20,184,166,0.4)]",
-  },
-};
-
 export function GameBoard({
   gameState,
   socket,
   handleRestartGame,
 }: GameBoardProps) {
+  const { t } = useLanguage();
+
+  const EVENT_CONFIG: Record<
+    LastEvent["type"],
+    { emoji: string; label: (e: LastEvent) => string; bg: string; border: string; glow: string }
+  > = {
+    freeze: {
+      emoji: "❄️",
+      label: (e) => t.eventFreeze(e.targetName!, e.sourceName!),
+      bg: "bg-blue-900/80",
+      border: "border-cyan-400/60",
+      glow: "shadow-[0_0_40px_rgba(6,182,212,0.5)]",
+    },
+    "flip-three": {
+      emoji: "🎴",
+      label: (e) => t.eventFlipThree(e.targetName!),
+      bg: "bg-orange-900/80",
+      border: "border-orange-400/60",
+      glow: "shadow-[0_0_40px_rgba(249,115,22,0.5)]",
+    },
+    "second-chance": {
+      emoji: "💖",
+      label: (e) => t.eventSecondChance(e.targetName!),
+      bg: "bg-pink-900/80",
+      border: "border-pink-400/60",
+      glow: "shadow-[0_0_40px_rgba(236,72,153,0.5)]",
+    },
+    bust: {
+      emoji: "💥",
+      label: (e) => t.eventBust(e.targetName!),
+      bg: "bg-red-900/80",
+      border: "border-red-400/60",
+      glow: "shadow-[0_0_40px_rgba(239,68,68,0.6)]",
+    },
+    flip7: {
+      emoji: "🌈",
+      label: (e) => t.eventFlip7(e.targetName!),
+      bg: "bg-purple-900/80",
+      border: "border-purple-400/60",
+      glow: "shadow-[0_0_50px_rgba(168,85,247,0.7)]",
+    },
+    stop: {
+      emoji: "🛑",
+      label: (e) => t.eventStop(e.targetName!),
+      bg: "bg-gray-900/80",
+      border: "border-teal-400/60",
+      glow: "shadow-[0_0_30px_rgba(20,184,166,0.4)]",
+    },
+  };
+
   const [selectedCard, setSelectedCard] = useState<Card | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isPlaying, setIsPlaying] = useState<SoundKey | null>(null);
@@ -84,6 +87,7 @@ export function GameBoard({
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const prevLastEventRef = useRef<LastEvent | null>(null);
   const broadcastTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const prevLastDrawnCardRef = useRef<Card | null | undefined>(undefined);
 
   const isGameFinished =
     gameState.status === "finished" &&
@@ -118,6 +122,25 @@ export function GameBoard({
     prevLastEventRef.current = newEvent;
   }, [gameState.lastEvent]);
 
+  // Auto-open special card modal when the current player draws a special card
+  useEffect(() => {
+    if (!isCurrentPlayer || !thisPlayer) return;
+
+    const lastDrawn = thisPlayer.lastDrawnCard;
+    const prevLastDrawn = prevLastDrawnCardRef.current;
+
+    // Only trigger when lastDrawnCard changes to a new special card
+    if (
+      lastDrawn &&
+      lastDrawn.type === "special" &&
+      lastDrawn !== prevLastDrawn
+    ) {
+      setSelectedCard(lastDrawn);
+    }
+
+    prevLastDrawnCardRef.current = lastDrawn;
+  }, [thisPlayer?.lastDrawnCard, isCurrentPlayer, thisPlayer]);
+
   const handlePlayCard = (cardIndex: number) => {
     if (!isCurrentPlayer) return;
 
@@ -131,8 +154,6 @@ export function GameBoard({
     if (!isCurrentPlayer) {
       return;
     }
-
-    const idPlayer = currentPlayer.id;
 
     if (gameState.flipCount > 1) {
       playSound("useFlip3");
@@ -190,10 +211,10 @@ export function GameBoard({
       gameState.id;
     if (navigator.clipboard) {
       navigator.clipboard.writeText(url).then(() => {
-        toast.success("Invite link copied! Share it to invite players.");
+        toast.success(t.inviteCopied);
       });
     } else {
-      toast.error("Copy not supported — room code: " + gameState.id);
+      toast.error(t.copyError + gameState.id);
     }
   };
 
@@ -274,7 +295,7 @@ export function GameBoard({
     if (isGameFinished) {
       const winner = gameState.players.find((p) => p.cards.length === 0);
       if (winner) {
-        toast.success(`${winner.name} wins the game!`);
+        toast.success(`${winner.name} ${t.winsGame}`);
       }
       playSound("win");
     }
@@ -322,7 +343,7 @@ export function GameBoard({
             </div>
             {broadcastEvent.pointsAdded !== undefined && (
               <div className="mt-2 text-3xl font-black text-green-400">
-                +{broadcastEvent.pointsAdded} pts
+                +{broadcastEvent.pointsAdded} {t.pts}
               </div>
             )}
           </div>
@@ -341,12 +362,12 @@ export function GameBoard({
         >
           <div className="flex flex-wrap justify-between items-center gap-2">
             <div className="flex items-center gap-3">
-              <span className="text-xs uppercase tracking-widest text-gray-500">Round</span>
+              <span className="text-xs uppercase tracking-widest text-gray-500">{t.round}</span>
               <span className="text-2xl font-black text-white">{gameState.round}</span>
             </div>
             <div className="flex items-center gap-3">
               <div className="flex items-center gap-2">
-                <span className="text-xs uppercase tracking-widest text-gray-500">Room</span>
+                <span className="text-xs uppercase tracking-widest text-gray-500">{t.room}</span>
                 <span className="font-mono text-green-400 font-bold tracking-widest text-sm">
                   {gameState.id.toUpperCase()}
                 </span>
@@ -359,7 +380,7 @@ export function GameBoard({
                   onClick={handleCopyInviteLink}
                 >
                   <Copy className="w-3 h-3" />
-                  Invite
+                  {t.invite}
                 </Button>
               )}
               <Button
@@ -375,7 +396,7 @@ export function GameBoard({
                 title={soundEnabled ? "Mute sounds" : "Unmute sounds"}
               >
                 {soundEnabled ? <Volume2 className="w-3 h-3" /> : <VolumeX className="w-3 h-3" />}
-                {soundEnabled ? "Sound" : "Muted"}
+                {soundEnabled ? t.sound : t.muted}
               </Button>
             </div>
           </div>
@@ -421,7 +442,7 @@ export function GameBoard({
                 "disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:scale-100 disabled:shadow-none"
               )}
             >
-              🃏 Draw ({gameState.deck.length})
+              🃏 {t.draw} ({gameState.deck.length})
             </Button>
             <Button
               onClick={handleStopDrawCard}
@@ -434,14 +455,14 @@ export function GameBoard({
                 "disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:scale-100 disabled:shadow-none"
               )}
             >
-              🛑 Stop!
+              🛑 {t.stop}
             </Button>
           </div>
 
           {gameState.flipCount > 1 && (
             <div className="flex items-center gap-2 animate-pulse">
               <span className="text-orange-300 bg-orange-500/20 border border-orange-500/50 rounded-full px-4 py-1.5 text-sm font-bold">
-                🎴 Force Draw: {gameState.flipCount - 1} remaining
+                🎴 {t.forceDraw}: {gameState.flipCount - 1} {t.remaining}
               </span>
             </div>
           )}
@@ -479,10 +500,10 @@ export function GameBoard({
                   </div>
                   <h3 className="text-lg font-bold text-white">
                     {allActiveHaveSecondChance ? (
-                      <span className="text-pink-300">Second Chance</span>
+                      <span className="text-pink-300">{t.secondChanceTitle}</span>
                     ) : (
                       <>
-                        Select a target for{" "}
+                        {t.selectTarget}{" "}
                         <span className="text-purple-300 capitalize">{selectedCard.value}</span>
                       </>
                     )}
@@ -492,11 +513,10 @@ export function GameBoard({
                 {allActiveHaveSecondChance ? (
                   <div className="text-center space-y-4">
                     <p className="text-sm text-pink-200/80 bg-pink-900/30 border border-pink-500/30 rounded-xl px-4 py-3">
-                      All active players already have Second Chance. The card will be discarded.
+                      {t.allHaveSecondChance}
                     </p>
                     <Button
                       onClick={() => {
-                        // All active players have secondChance=true; server will discard the card.
                         const anyActive = gameState.players.find((p) => p.status !== "stop")!;
                         selectSpecialCardVictim(anyActive, selectedCard);
                       }}
@@ -506,7 +526,7 @@ export function GameBoard({
                         "hover:scale-105 hover:shadow-[0_0_15px_rgba(236,72,153,0.4)]"
                       )}
                     >
-                      Discard Card
+                      {t.discardCard}
                     </Button>
                   </div>
                 ) : (
@@ -533,7 +553,7 @@ export function GameBoard({
                   onClick={() => setSelectedCard(null)}
                   className="mt-4 w-full text-sm text-gray-500 hover:text-gray-300 transition-colors"
                 >
-                  Cancel
+                  {t.cancel}
                 </button>
               </div>
             </div>
@@ -582,9 +602,9 @@ export function GameBoard({
                     WebkitTextFillColor: "transparent",
                   }}
                 >
-                  GAME OVER
+                  {t.gameOver}
                 </h2>
-                <p className="text-gray-400 text-sm mt-1">Final Standings</p>
+                <p className="text-gray-400 text-sm mt-1">{t.finalStandings}</p>
               </div>
 
               <div className="flex flex-col gap-2 mb-6">
@@ -618,7 +638,7 @@ export function GameBoard({
                       index === 0 ? "text-yellow-300" : "text-gray-400"
                     )}>
                       {player.score}
-                      <span className="text-xs font-medium text-gray-600 ml-1">pts</span>
+                      <span className="text-xs font-medium text-gray-600 ml-1">{t.pts}</span>
                     </span>
                   </div>
                 ))}
@@ -633,7 +653,7 @@ export function GameBoard({
                   "shadow-[0_0_20px_rgba(168,85,247,0.5)]"
                 )}
               >
-                🎮 Play Again
+                {t.playAgain}
               </Button>
             </div>
           </div>
