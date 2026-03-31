@@ -115,6 +115,10 @@ export const translations = {
     cancel: "Cancel",
     pts: "pts",
 
+    // invite copied modal
+    inviteCopiedTitle: "Link Copied!",
+    close: "Close",
+
     // toasts
     inviteCopied: "Invite link copied! Share it to invite players.",
     copyError: "Copy not supported — room code: ",
@@ -243,6 +247,10 @@ export const translations = {
     discardCard: "Descartar Carta",
     cancel: "Cancelar",
     pts: "pts",
+
+    // invite copied modal
+    inviteCopiedTitle: "¡Link copiado!",
+    close: "Cerrar",
 
     // toasts
     inviteCopied: "¡Link de invitación copiado! Compartilo para invitar jugadores.",
