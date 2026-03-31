@@ -253,6 +253,6 @@ export const translations = {
     eventFlip7: (target: string) => `¡${target} hizo FLIP 7! ¡+15 bonus!`,
     eventStop: (target: string) => `¡${target} paró de robar!`,
   },
-} as const;
+};
 
 export type Translations = (typeof translations)["en"];
