@@ -102,14 +102,14 @@ export function GameLobby() {
               <ul className="space-y-1 list-disc list-inside">
                 <li>{t.yourTurnItems[0] as string}</li>
                 <li>
-                  {(t.yourTurnItems[1] as unknown as readonly string[])[0]}
-                  <span className="text-white font-medium">{(t.yourTurnItems[1] as unknown as readonly string[])[1]}</span>
-                  {(t.yourTurnItems[1] as unknown as readonly string[])[2]}
+                  {(t.yourTurnItems[1] as string[])[0]}
+                  <span className="text-white font-medium">{(t.yourTurnItems[1] as string[])[1]}</span>
+                  {(t.yourTurnItems[1] as string[])[2]}
                 </li>
                 <li>
-                  {(t.yourTurnItems[2] as unknown as readonly string[])[0]}
-                  <span className="text-red-400 font-medium">{(t.yourTurnItems[2] as unknown as readonly string[])[1]}</span>
-                  {(t.yourTurnItems[2] as unknown as readonly string[])[2]}
+                  {(t.yourTurnItems[2] as string[])[0]}
+                  <span className="text-red-400 font-medium">{(t.yourTurnItems[2] as string[])[1]}</span>
+                  {(t.yourTurnItems[2] as string[])[2]}
                 </li>
               </ul>
             </div>
@@ -128,7 +128,7 @@ export function GameLobby() {
             <div>
               <p className="text-purple-300 font-semibold mb-1">{t.cardTypes}</p>
               <ul className="space-y-1">
-                {(t.cardTypeItems as unknown as readonly (readonly string[])[]).map((item, i) => (
+                {(t.cardTypeItems as string[][]).map((item, i) => (
                   <li key={i}>
                     <span className={i === 0 ? "text-white font-medium" : i === 1 ? "text-green-400 font-medium" : "text-yellow-300 font-medium"}>
                       {item[0]}
@@ -142,7 +142,7 @@ export function GameLobby() {
             <div>
               <p className="text-purple-300 font-semibold mb-1">{t.specialCards}</p>
               <ul className="space-y-1">
-                {(t.specialCardItems as unknown as readonly (readonly string[])[]).map((item, i) => (
+                {(t.specialCardItems as string[][]).map((item, i) => (
                   <li key={i}>
                     <span className={i === 0 ? "text-cyan-400 font-medium" : i === 1 ? "text-orange-400 font-medium" : "text-pink-400 font-medium"}>
                       {item[0]}
@@ -156,7 +156,7 @@ export function GameLobby() {
             <div>
               <p className="text-purple-300 font-semibold mb-1">{t.scoringOrder}</p>
               <ol className="space-y-0.5 list-decimal list-inside">
-                {(t.scoringItems as unknown as readonly string[]).map((item, i) => (
+                {(t.scoringItems as string[]).map((item, i) => (
                   <li key={i}>{item}</li>
                 ))}
               </ol>
@@ -289,14 +289,14 @@ export function GameLobby() {
                 <ul className="space-y-1 list-disc list-inside">
                   <li>{t.yourTurnItems[0] as string}</li>
                   <li>
-                    {(t.yourTurnItems[1] as unknown as readonly string[])[0]}
-                    <span className="text-white font-medium">{(t.yourTurnItems[1] as unknown as readonly string[])[1]}</span>
-                    {(t.yourTurnItems[1] as unknown as readonly string[])[2]}
+                    {(t.yourTurnItems[1] as string[])[0]}
+                    <span className="text-white font-medium">{(t.yourTurnItems[1] as string[])[1]}</span>
+                    {(t.yourTurnItems[1] as string[])[2]}
                   </li>
                   <li>
-                    {(t.yourTurnItems[2] as unknown as readonly string[])[0]}
-                    <span className="text-red-400 font-medium">{(t.yourTurnItems[2] as unknown as readonly string[])[1]}</span>
-                    {(t.yourTurnItems[2] as unknown as readonly string[])[2]}
+                    {(t.yourTurnItems[2] as string[])[0]}
+                    <span className="text-red-400 font-medium">{(t.yourTurnItems[2] as string[])[1]}</span>
+                    {(t.yourTurnItems[2] as string[])[2]}
                   </li>
                 </ul>
               </div>
@@ -317,7 +317,7 @@ export function GameLobby() {
               <div>
                 <p className="text-purple-300 font-semibold mb-1">{t.cardTypes}</p>
                 <ul className="space-y-1">
-                  {(t.cardTypeItems as unknown as readonly (readonly string[])[]).map((item, i) => (
+                  {(t.cardTypeItems as string[][]).map((item, i) => (
                     <li key={i}>
                       <span className={i === 0 ? "text-white font-medium" : i === 1 ? "text-green-400 font-medium" : "text-yellow-300 font-medium"}>
                         {item[0]}
@@ -332,7 +332,7 @@ export function GameLobby() {
               <div>
                 <p className="text-purple-300 font-semibold mb-1">{t.specialCards}</p>
                 <ul className="space-y-1">
-                  {(t.specialCardItems as unknown as readonly (readonly string[])[]).map((item, i) => (
+                  {(t.specialCardItems as string[][]).map((item, i) => (
                     <li key={i}>
                       <span className={i === 0 ? "text-cyan-400 font-medium" : i === 1 ? "text-orange-400 font-medium" : "text-pink-400 font-medium"}>
                         {item[0]}
@@ -347,7 +347,7 @@ export function GameLobby() {
               <div>
                 <p className="text-purple-300 font-semibold mb-1">{t.scoringOrder}</p>
                 <ol className="space-y-0.5 list-decimal list-inside">
-                  {(t.scoringItems as unknown as readonly string[]).map((item, i) => (
+                  {(t.scoringItems as string[]).map((item, i) => (
                     <li key={i}>{item}</li>
                   ))}
                 </ol>
