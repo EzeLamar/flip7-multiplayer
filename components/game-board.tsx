@@ -15,7 +15,7 @@ import { toast } from "sonner";
 import { PlayerInfo } from "@/components/ui/gamerInfo";
 import { cn } from "@/lib/utils";
 import { soundMappings, SoundKey } from "@/utils/soundMappings";
-import { BookOpen, Copy, Users, Volume2, VolumeX } from "lucide-react";
+import { BookOpen, Copy, Users, Volume1, Volume2, VolumeX } from "lucide-react";
 import { useLanguage } from "@/components/language-provider";
 
 interface GameBoardProps {
@@ -83,7 +83,7 @@ export function GameBoard({
   const [showRules, setShowRules] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isPlaying, setIsPlaying] = useState<SoundKey | null>(null);
-  const [soundEnabled, setSoundEnabled] = useState(true);
+  const [volumeState, setVolumeState] = useState<"full" | "low" | "muted">("full");
   const [broadcastEvent, setBroadcastEvent] = useState<LastEvent | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const prevLastEventRef = useRef<LastEvent | null>(null);
@@ -279,10 +279,11 @@ export function GameBoard({
   };
 
   const playSound = (soundKey: SoundKey) => {
-    if (!soundEnabled) return;
+    if (volumeState === "muted") return;
     if (audioRef.current) {
       audioRef.current.src = soundMappings[soundKey];
       audioRef.current.currentTime = 0;
+      audioRef.current.volume = volumeState === "low" ? 0.2 : 1;
       audioRef.current.play();
       setIsPlaying(soundKey);
     }
@@ -387,17 +388,35 @@ export function GameBoard({
               <Button
                 size="sm"
                 variant="outline"
-                onClick={() => setSoundEnabled((prev) => !prev)}
+                onClick={() =>
+                  setVolumeState((prev: "full" | "low" | "muted") =>
+                    prev === "full" ? "low" : prev === "low" ? "muted" : "full"
+                  )
+                }
                 className={cn(
                   "gap-1.5 text-xs transition-colors",
-                  soundEnabled
+                  volumeState === "full"
                     ? "text-cyan-300 border-cyan-500/50 hover:bg-cyan-500/20 hover:text-cyan-200 hover:border-cyan-400"
+                    : volumeState === "low"
+                    ? "text-yellow-300 border-yellow-500/50 hover:bg-yellow-500/20 hover:text-yellow-200 hover:border-yellow-400"
                     : "text-gray-500 border-gray-600/50 hover:bg-gray-700/30 hover:text-gray-300"
                 )}
-                title={soundEnabled ? "Mute sounds" : "Unmute sounds"}
+                title={
+                  volumeState === "full"
+                    ? "Lower volume"
+                    : volumeState === "low"
+                    ? "Mute sounds"
+                    : "Unmute sounds"
+                }
               >
-                {soundEnabled ? <Volume2 className="w-3 h-3" /> : <VolumeX className="w-3 h-3" />}
-                {soundEnabled ? t.sound : t.muted}
+                {volumeState === "full" ? (
+                  <Volume2 className="w-3 h-3" />
+                ) : volumeState === "low" ? (
+                  <Volume1 className="w-3 h-3" />
+                ) : (
+                  <VolumeX className="w-3 h-3" />
+                )}
+                {volumeState === "full" ? t.sound : volumeState === "low" ? t.volumeLow : t.muted}
               </Button>
               <Button
                 size="sm"
