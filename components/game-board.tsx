@@ -15,7 +15,7 @@ import { toast } from "sonner";
 import { PlayerInfo } from "@/components/ui/gamerInfo";
 import { cn } from "@/lib/utils";
 import { soundMappings, SoundKey } from "@/utils/soundMappings";
-import { Copy, Users, Volume2, VolumeX } from "lucide-react";
+import { BookOpen, Copy, Users, Volume2, VolumeX } from "lucide-react";
 import { useLanguage } from "@/components/language-provider";
 
 interface GameBoardProps {
@@ -80,6 +80,7 @@ export function GameBoard({
   };
 
   const [selectedCard, setSelectedCard] = useState<Card | null>(null);
+  const [showRules, setShowRules] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isPlaying, setIsPlaying] = useState<SoundKey | null>(null);
   const [soundEnabled, setSoundEnabled] = useState(true);
@@ -398,6 +399,15 @@ export function GameBoard({
                 {soundEnabled ? <Volume2 className="w-3 h-3" /> : <VolumeX className="w-3 h-3" />}
                 {soundEnabled ? t.sound : t.muted}
               </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => setShowRules(true)}
+                className="text-purple-300 border-purple-500/50 hover:bg-purple-500/20 hover:text-purple-200 hover:border-purple-400 gap-1.5 text-xs"
+              >
+                <BookOpen className="w-3 h-3" />
+                {t.rules}
+              </Button>
             </div>
           </div>
         </div>
@@ -474,6 +484,110 @@ export function GameBoard({
           src="/draw-card.mp3"
           crossOrigin="anonymous"
         />
+
+        {/* Rules Modal */}
+        {showRules && (
+          <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-40 p-4">
+            <div
+              className="rounded-2xl p-6 max-w-sm w-full mx-4 animate-float-in max-h-[85vh] overflow-y-auto"
+              style={{
+                background: "rgba(17,17,34,0.97)",
+                border: "1px solid rgba(168,85,247,0.5)",
+                boxShadow: "0 0 40px rgba(168,85,247,0.3)",
+              }}
+            >
+              <div className="text-center mb-5">
+                <div className="text-3xl mb-2">📖</div>
+                <h3 className="text-lg font-bold text-white">{t.rulesTitle}</h3>
+              </div>
+
+              <div className="space-y-4 text-xs text-gray-400">
+                {/* Objective */}
+                <div>
+                  <p className="text-purple-300 font-semibold mb-1">{t.objective}</p>
+                  <p>{t.objectiveText}</p>
+                </div>
+
+                {/* Turn structure */}
+                <div>
+                  <p className="text-purple-300 font-semibold mb-1">{t.yourTurn}</p>
+                  <ul className="space-y-1 list-disc list-inside">
+                    <li>{t.yourTurnItems[0] as string}</li>
+                    <li>
+                      {(t.yourTurnItems[1] as string[])[0]}
+                      <span className="text-white font-medium">{(t.yourTurnItems[1] as string[])[1]}</span>
+                      {(t.yourTurnItems[1] as string[])[2]}
+                    </li>
+                    <li>
+                      {(t.yourTurnItems[2] as string[])[0]}
+                      <span className="text-red-400 font-medium">{(t.yourTurnItems[2] as string[])[1]}</span>
+                      {(t.yourTurnItems[2] as string[])[2]}
+                    </li>
+                  </ul>
+                </div>
+
+                {/* FLIP 7 */}
+                <div>
+                  <p className="text-purple-300 font-semibold mb-1">{t.flip7Title}</p>
+                  <p>
+                    {t.flip7Text[0]}
+                    <span className="text-white font-medium">{t.flip7Text[1]}</span>
+                    {t.flip7Text[2]}
+                    <span className="text-yellow-300 font-medium">{t.flip7Text[3]}</span>
+                    {t.flip7Text[4]}
+                  </p>
+                </div>
+
+                {/* Card types */}
+                <div>
+                  <p className="text-purple-300 font-semibold mb-1">{t.cardTypes}</p>
+                  <ul className="space-y-1">
+                    {(t.cardTypeItems as string[][]).map((item, i) => (
+                      <li key={i}>
+                        <span className={i === 0 ? "text-white font-medium" : i === 1 ? "text-green-400 font-medium" : "text-yellow-300 font-medium"}>
+                          {item[0]}
+                        </span>
+                        {item[1]}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+
+                {/* Special cards */}
+                <div>
+                  <p className="text-purple-300 font-semibold mb-1">{t.specialCards}</p>
+                  <ul className="space-y-1">
+                    {(t.specialCardItems as string[][]).map((item, i) => (
+                      <li key={i}>
+                        <span className={i === 0 ? "text-cyan-400 font-medium" : i === 1 ? "text-orange-400 font-medium" : "text-pink-400 font-medium"}>
+                          {item[0]}
+                        </span>
+                        {item[1]}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+
+                {/* Scoring */}
+                <div>
+                  <p className="text-purple-300 font-semibold mb-1">{t.scoringOrder}</p>
+                  <ol className="space-y-0.5 list-decimal list-inside">
+                    {(t.scoringItems as string[]).map((item, i) => (
+                      <li key={i}>{item}</li>
+                    ))}
+                  </ol>
+                </div>
+              </div>
+
+              <button
+                onClick={() => setShowRules(false)}
+                className="mt-5 w-full text-sm text-gray-500 hover:text-gray-300 transition-colors"
+              >
+                {t.cancel}
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* Special Card Victim Modal */}
         {selectedCard && (() => {
