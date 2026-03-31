@@ -2,6 +2,7 @@ import "./globals.css";
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import { PWAInstallPrompt } from "@/components/PWAInstallPrompt";
+import { LanguageProvider } from "@/components/language-provider";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -28,8 +29,10 @@ export default function RootLayout({
         <meta name="mobile-web-app-capable" content="yes" />
       </head>
       <body className={inter.className}>
-        {children}
-        <PWAInstallPrompt />
+        <LanguageProvider>
+          {children}
+          <PWAInstallPrompt />
+        </LanguageProvider>
       </body>
     </html>
   );

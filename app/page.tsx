@@ -1,7 +1,11 @@
+"use client";
+
 import { BuyMeACoffeeButton } from "@/components/BuyMeACoffeeButton";
 import { GameLobby } from "@/components/game-lobby";
+import { LanguageToggle, useLanguage } from "@/components/language-provider";
 
 export default function Home() {
+  const { t } = useLanguage();
   return (
     <div className="min-h-screen bg-[#080b14] relative overflow-hidden">
       {/* Animated background glow blobs */}
@@ -15,6 +19,9 @@ export default function Home() {
       <div className="relative z-10 container mx-auto px-4 py-8">
         {/* Header */}
         <div className="mb-8 flex flex-col items-center gap-3">
+          <div className="w-full flex justify-end mb-2">
+            <LanguageToggle />
+          </div>
           <div className="flex items-center justify-center gap-4">
             <h1
               className="text-6xl md:text-8xl font-black tracking-widest text-white uppercase animate-title-glow"
@@ -27,7 +34,7 @@ export default function Home() {
             </h1>
           </div>
           <p className="text-purple-300 text-sm md:text-base tracking-[0.3em] uppercase font-semibold opacity-80">
-            Multiplayer Card Game
+            {t.subtitle}
           </p>
           <div className="mt-1">
             <BuyMeACoffeeButton />

@@ -6,21 +6,7 @@ import { Input } from "@/components/ui/input";
 import { GameBoard } from "@/components/game-board";
 import { useSocket } from "@/hooks/use-socket";
 import { cn } from "@/lib/utils";
-
-/**
- * Messages displayed sequentially while a game room is being created.
- * Each message is shown for LOADING_MESSAGE_INTERVAL_MS before cycling to the next.
- * Add or remove entries here to adjust the loading experience.
- */
-const LOADING_MESSAGES = [
-  "Shuffling the deck...",
-  "Setting up the table...",
-  "Hiding the Freeze cards...",
-  "Calculating your luck...",
-  "Almost there...",
-  "Polishing the cards...",
-  "Finding a good seat...",
-];
+import { useLanguage } from "@/components/language-provider";
 
 /** Milliseconds between each loading message transition. */
 const LOADING_MESSAGE_INTERVAL_MS = 2500;
@@ -32,20 +18,16 @@ export function GameLobby() {
   const [showRules, setShowRules] = useState(false);
   const [loadingMsgIndex, setLoadingMsgIndex] = useState(0);
   const { socket, gameState, isCreatingRoom, createGame, joinGame, startGame } = useSocket();
+  const { t } = useLanguage();
 
-  /**
-   * Cycles through LOADING_MESSAGES at a fixed interval while the room is
-   * being created. Resets to the first message each time isCreatingRoom
-   * becomes true and clears the interval when it turns false.
-   */
   useEffect(() => {
     if (!isCreatingRoom) return;
     setLoadingMsgIndex(0);
     const interval = setInterval(() => {
-      setLoadingMsgIndex((i) => (i + 1) % LOADING_MESSAGES.length);
+      setLoadingMsgIndex((i) => (i + 1) % t.loadingMessages.length);
     }, LOADING_MESSAGE_INTERVAL_MS);
     return () => clearInterval(interval);
-  }, [isCreatingRoom]);
+  }, [isCreatingRoom, t.loadingMessages.length]);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -91,11 +73,13 @@ export function GameLobby() {
           {/* Spinner + heading */}
           <div className="flex flex-col items-center gap-3 text-center">
             <div className="w-10 h-10 rounded-full border-4 border-purple-500/30 border-t-purple-400 animate-spin" />
-            <p className="text-purple-300 font-bold text-base tracking-wide">{LOADING_MESSAGES[loadingMsgIndex]}</p>
+            <p className="text-purple-300 font-bold text-base tracking-wide">
+              {t.loadingMessages[loadingMsgIndex]}
+            </p>
             <p className="text-xs text-gray-400 leading-relaxed">
-              The server is waking up — this can take up to a minute on first load.
+              {t.loadingWakingUp}
               <br />
-              <span className="text-yellow-400 font-medium">Please stay on this page!</span>
+              <span className="text-yellow-400 font-medium">{t.loadingStayOnPage}</span>
             </p>
           </div>
 
@@ -104,54 +88,77 @@ export function GameLobby() {
 
           {/* Rules to read while waiting */}
           <p className="text-xs text-purple-400 font-semibold text-center tracking-widest uppercase">
-            While you wait — how to play
+            {t.whileYouWait}
           </p>
 
           <div className="space-y-3 text-xs text-gray-400">
             <div>
-              <p className="text-purple-300 font-semibold mb-1">Objective</p>
-              <p>Be the first player to reach 200 points across multiple rounds.</p>
+              <p className="text-purple-300 font-semibold mb-1">{t.objective}</p>
+              <p>{t.objectiveText}</p>
             </div>
 
             <div>
-              <p className="text-purple-300 font-semibold mb-1">Your Turn</p>
+              <p className="text-purple-300 font-semibold mb-1">{t.yourTurn}</p>
               <ul className="space-y-1 list-disc list-inside">
-                <li>Draw cards one at a time to build your hand.</li>
-                <li>Press <span className="text-white font-medium">Stop</span> at any time to lock in your score.</li>
-                <li>Drawing a <span className="text-red-400 font-medium">duplicate number</span> causes a bust — you score 0 this round.</li>
+                <li>{t.yourTurnItems[0] as string}</li>
+                <li>
+                  {(t.yourTurnItems[1] as string[])[0]}
+                  <span className="text-white font-medium">{(t.yourTurnItems[1] as string[])[1]}</span>
+                  {(t.yourTurnItems[1] as string[])[2]}
+                </li>
+                <li>
+                  {(t.yourTurnItems[2] as string[])[0]}
+                  <span className="text-red-400 font-medium">{(t.yourTurnItems[2] as string[])[1]}</span>
+                  {(t.yourTurnItems[2] as string[])[2]}
+                </li>
               </ul>
             </div>
 
             <div>
-              <p className="text-purple-300 font-semibold mb-1">FLIP 7</p>
-              <p>Collect 7 <span className="text-white font-medium">different</span> number cards to trigger FLIP 7. You auto-stop and earn a <span className="text-yellow-300 font-medium">+15 bonus</span>.</p>
+              <p className="text-purple-300 font-semibold mb-1">{t.flip7Title}</p>
+              <p>
+                {t.flip7Text[0]}
+                <span className="text-white font-medium">{t.flip7Text[1]}</span>
+                {t.flip7Text[2]}
+                <span className="text-yellow-300 font-medium">{t.flip7Text[3]}</span>
+                {t.flip7Text[4]}
+              </p>
             </div>
 
             <div>
-              <p className="text-purple-300 font-semibold mb-1">Card Types</p>
+              <p className="text-purple-300 font-semibold mb-1">{t.cardTypes}</p>
               <ul className="space-y-1">
-                <li><span className="text-white font-medium">Number cards (0–12)</span> — face value added to your score.</li>
-                <li><span className="text-green-400 font-medium">+2 / +4 / +6 / +8 / +10</span> — add that amount to your total.</li>
-                <li><span className="text-yellow-300 font-medium">x2</span> — doubles your number-card subtotal.</li>
+                {(t.cardTypeItems as string[][]).map((item, i) => (
+                  <li key={i}>
+                    <span className={i === 0 ? "text-white font-medium" : i === 1 ? "text-green-400 font-medium" : "text-yellow-300 font-medium"}>
+                      {item[0]}
+                    </span>
+                    {item[1]}
+                  </li>
+                ))}
               </ul>
             </div>
 
             <div>
-              <p className="text-purple-300 font-semibold mb-1">Special Cards</p>
+              <p className="text-purple-300 font-semibold mb-1">{t.specialCards}</p>
               <ul className="space-y-1">
-                <li><span className="text-cyan-400 font-medium">❄️ Freeze</span> — force a target to stop immediately.</li>
-                <li><span className="text-orange-400 font-medium">🎴 Flip Three</span> — force a target to draw 3 cards now.</li>
-                <li><span className="text-pink-400 font-medium">💖 Second Chance</span> — saves a player from their next bust.</li>
+                {(t.specialCardItems as string[][]).map((item, i) => (
+                  <li key={i}>
+                    <span className={i === 0 ? "text-cyan-400 font-medium" : i === 1 ? "text-orange-400 font-medium" : "text-pink-400 font-medium"}>
+                      {item[0]}
+                    </span>
+                    {item[1]}
+                  </li>
+                ))}
               </ul>
             </div>
 
             <div>
-              <p className="text-purple-300 font-semibold mb-1">Scoring Order</p>
+              <p className="text-purple-300 font-semibold mb-1">{t.scoringOrder}</p>
               <ol className="space-y-0.5 list-decimal list-inside">
-                <li>Sum all number cards.</li>
-                <li>Apply x2 if held.</li>
-                <li>Add all +X modifier cards.</li>
-                <li>Add +15 if FLIP 7 was achieved.</li>
+                {(t.scoringItems as string[]).map((item, i) => (
+                  <li key={i}>{item}</li>
+                ))}
               </ol>
             </div>
           </div>
@@ -175,12 +182,12 @@ export function GameLobby() {
         {/* Section heading */}
         <div className="text-center mb-2">
           <span className="text-xs tracking-[0.2em] uppercase text-purple-400 font-semibold">
-            {view === "join" ? "Join a Game" : "Create a Game"}
+            {view === "join" ? t.joinGame : t.createGame}
           </span>
         </div>
 
         <Input
-          placeholder="Your name"
+          placeholder={t.yourName}
           value={playerName}
           onChange={(e) => setPlayerName(e.target.value)}
           className={cn(
@@ -193,7 +200,7 @@ export function GameLobby() {
         {view === "join" ? (
           <>
             <Input
-              placeholder="Game code"
+              placeholder={t.gameCode}
               value={gameId}
               onChange={(e) => setGameId(e.target.value.toUpperCase())}
               className={cn(
@@ -213,7 +220,7 @@ export function GameLobby() {
                 "shadow-[0_0_15px_rgba(168,85,247,0.4)] hover:shadow-[0_0_25px_rgba(168,85,247,0.6)]"
               )}
             >
-              Join Game
+              {t.joinGameBtn}
             </Button>
             <Button
               variant="outline"
@@ -224,7 +231,7 @@ export function GameLobby() {
                 "hover:bg-purple-500/20 hover:border-purple-400 hover:text-purple-200"
               )}
             >
-              Create New Game
+              {t.createNewGame}
             </Button>
           </>
         ) : (
@@ -240,7 +247,7 @@ export function GameLobby() {
                 "shadow-[0_0_15px_rgba(168,85,247,0.4)] hover:shadow-[0_0_25px_rgba(168,85,247,0.6)]"
               )}
             >
-              Create Game
+              {t.createGameBtn}
             </Button>
             <Button
               variant="outline"
@@ -251,7 +258,7 @@ export function GameLobby() {
                 "hover:bg-purple-500/20 hover:border-purple-400 hover:text-purple-200"
               )}
             >
-              Join Existing Game
+              {t.joinExistingGame}
             </Button>
           </>
         )}
@@ -259,67 +266,90 @@ export function GameLobby() {
         {/* Game rules hint + expandable how-to-play */}
         <div className="pt-2 border-t border-white/10">
           <p className="text-xs text-gray-500 text-center leading-relaxed">
-            Collect cards without duplicates • 7 unique numbers = FLIP7! • First to 200 pts wins
+            {t.gameHint}
           </p>
           <button
             onClick={() => setShowRules((s) => !s)}
             className="mt-2 w-full text-xs text-purple-400 hover:text-purple-300 transition-colors text-center"
           >
-            {showRules ? "Hide rules ▲" : "How to play ▼"}
+            {showRules ? t.hideRules : t.howToPlay}
           </button>
 
           {showRules && (
             <div className="mt-3 space-y-3 text-xs text-gray-400">
               {/* Objective */}
               <div>
-                <p className="text-purple-300 font-semibold mb-1">Objective</p>
-                <p>Be the first player to reach 200 points across multiple rounds.</p>
+                <p className="text-purple-300 font-semibold mb-1">{t.objective}</p>
+                <p>{t.objectiveText}</p>
               </div>
 
               {/* Turn structure */}
               <div>
-                <p className="text-purple-300 font-semibold mb-1">Your Turn</p>
+                <p className="text-purple-300 font-semibold mb-1">{t.yourTurn}</p>
                 <ul className="space-y-1 list-disc list-inside">
-                  <li>Draw cards one at a time to build your hand.</li>
-                  <li>Press <span className="text-white font-medium">Stop</span> at any time to lock in your score for the round.</li>
-                  <li>Drawing a <span className="text-red-400 font-medium">duplicate number</span> causes a bust — you lose all cards and score 0 this round.</li>
+                  <li>{t.yourTurnItems[0] as string}</li>
+                  <li>
+                    {(t.yourTurnItems[1] as string[])[0]}
+                    <span className="text-white font-medium">{(t.yourTurnItems[1] as string[])[1]}</span>
+                    {(t.yourTurnItems[1] as string[])[2]}
+                  </li>
+                  <li>
+                    {(t.yourTurnItems[2] as string[])[0]}
+                    <span className="text-red-400 font-medium">{(t.yourTurnItems[2] as string[])[1]}</span>
+                    {(t.yourTurnItems[2] as string[])[2]}
+                  </li>
                 </ul>
               </div>
 
               {/* FLIP 7 */}
               <div>
-                <p className="text-purple-300 font-semibold mb-1">FLIP 7</p>
-                <p>Collect 7 <span className="text-white font-medium">different</span> number cards to trigger FLIP 7. You automatically stop and earn a <span className="text-yellow-300 font-medium">+15 bonus</span> on top of your card total.</p>
+                <p className="text-purple-300 font-semibold mb-1">{t.flip7Title}</p>
+                <p>
+                  {t.flip7Text[0]}
+                  <span className="text-white font-medium">{t.flip7Text[1]}</span>
+                  {t.flip7Text[2]}
+                  <span className="text-yellow-300 font-medium">{t.flip7Text[3]}</span>
+                  {t.flip7Text[4]}
+                </p>
               </div>
 
               {/* Card types */}
               <div>
-                <p className="text-purple-300 font-semibold mb-1">Card Types</p>
+                <p className="text-purple-300 font-semibold mb-1">{t.cardTypes}</p>
                 <ul className="space-y-1">
-                  <li><span className="text-white font-medium">Number cards (0–12)</span> — contribute their face value to your score.</li>
-                  <li><span className="text-green-400 font-medium">+2 / +4 / +6 / +8 / +10</span> — add that amount to your total score.</li>
-                  <li><span className="text-yellow-300 font-medium">x2</span> — doubles your number-card subtotal before additive modifiers are applied.</li>
+                  {(t.cardTypeItems as string[][]).map((item, i) => (
+                    <li key={i}>
+                      <span className={i === 0 ? "text-white font-medium" : i === 1 ? "text-green-400 font-medium" : "text-yellow-300 font-medium"}>
+                        {item[0]}
+                      </span>
+                      {item[1]}
+                    </li>
+                  ))}
                 </ul>
               </div>
 
               {/* Special cards */}
               <div>
-                <p className="text-purple-300 font-semibold mb-1">Special Cards</p>
+                <p className="text-purple-300 font-semibold mb-1">{t.specialCards}</p>
                 <ul className="space-y-1">
-                  <li><span className="text-cyan-400 font-medium">❄️ Freeze</span> — force a target player to stop immediately, locking their current score.</li>
-                  <li><span className="text-orange-400 font-medium">🎴 Flip Three</span> — force a target player to draw 3 additional cards right now.</li>
-                  <li><span className="text-pink-400 font-medium">💖 Second Chance</span> — give a player a safety net: if they would bust on their next duplicate, the duplicate and this card are discarded instead of losing everything.</li>
+                  {(t.specialCardItems as string[][]).map((item, i) => (
+                    <li key={i}>
+                      <span className={i === 0 ? "text-cyan-400 font-medium" : i === 1 ? "text-orange-400 font-medium" : "text-pink-400 font-medium"}>
+                        {item[0]}
+                      </span>
+                      {item[1]}
+                    </li>
+                  ))}
                 </ul>
               </div>
 
               {/* Scoring */}
               <div>
-                <p className="text-purple-300 font-semibold mb-1">Scoring Order</p>
+                <p className="text-purple-300 font-semibold mb-1">{t.scoringOrder}</p>
                 <ol className="space-y-0.5 list-decimal list-inside">
-                  <li>Sum all number cards.</li>
-                  <li>Apply x2 if held (doubles the number total).</li>
-                  <li>Add all +X modifier cards.</li>
-                  <li>Add +15 if FLIP 7 was achieved.</li>
+                  {(t.scoringItems as string[]).map((item, i) => (
+                    <li key={i}>{item}</li>
+                  ))}
                 </ol>
               </div>
             </div>
