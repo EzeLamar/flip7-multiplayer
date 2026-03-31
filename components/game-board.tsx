@@ -487,15 +487,26 @@ export function GameBoard({
 
         {/* Rules Modal */}
         {showRules && (
-          <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-40 p-4">
+          <div
+            className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-40 p-4"
+            onClick={() => setShowRules(false)}
+          >
             <div
-              className="rounded-2xl p-6 max-w-sm w-full mx-4 animate-float-in max-h-[85vh] overflow-y-auto"
+              className="relative rounded-2xl p-6 max-w-sm w-full mx-4 animate-float-in max-h-[85vh] overflow-y-auto"
               style={{
                 background: "rgba(17,17,34,0.97)",
                 border: "1px solid rgba(168,85,247,0.5)",
                 boxShadow: "0 0 40px rgba(168,85,247,0.3)",
               }}
+              onClick={(e) => e.stopPropagation()}
             >
+              <button
+                onClick={() => setShowRules(false)}
+                className="sticky top-0 float-right ml-2 -mt-1 -mr-1 text-gray-500 hover:text-white transition-colors rounded-lg p-1 hover:bg-white/10"
+                aria-label="Close"
+              >
+                ✕
+              </button>
               <div className="text-center mb-5">
                 <div className="text-3xl mb-2">📖</div>
                 <h3 className="text-lg font-bold text-white">{t.rulesTitle}</h3>
@@ -578,13 +589,6 @@ export function GameBoard({
                   </ol>
                 </div>
               </div>
-
-              <button
-                onClick={() => setShowRules(false)}
-                className="mt-5 w-full text-sm text-gray-500 hover:text-gray-300 transition-colors"
-              >
-                {t.cancel}
-              </button>
             </div>
           </div>
         )}
