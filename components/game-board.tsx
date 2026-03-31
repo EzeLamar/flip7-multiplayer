@@ -12,6 +12,14 @@ import {
 } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog";
 import { PlayerInfo } from "@/components/ui/gamerInfo";
 import { cn } from "@/lib/utils";
 import { soundMappings, SoundKey } from "@/utils/soundMappings";
@@ -81,6 +89,7 @@ export function GameBoard({
 
   const [selectedCard, setSelectedCard] = useState<Card | null>(null);
   const [showRules, setShowRules] = useState(false);
+  const [showCopiedModal, setShowCopiedModal] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isPlaying, setIsPlaying] = useState<SoundKey | null>(null);
   const [volumeState, setVolumeState] = useState<"full" | "low" | "muted">("full");
@@ -212,7 +221,7 @@ export function GameBoard({
       gameState.id;
     if (navigator.clipboard) {
       navigator.clipboard.writeText(url).then(() => {
-        toast.success(t.inviteCopied);
+        setShowCopiedModal(true);
       });
     } else {
       toast.error(t.copyError + gameState.id);
@@ -796,6 +805,29 @@ export function GameBoard({
           </div>
         )}
       </div>
+
+      {/* Invite Link Copied Modal */}
+      <Dialog open={showCopiedModal} onOpenChange={setShowCopiedModal}>
+        <DialogContent className="sm:max-w-sm bg-gray-900 border border-purple-500/40 text-white">
+          <DialogHeader className="items-center text-center">
+            <div className="text-4xl mb-2">🔗</div>
+            <DialogTitle className="text-white text-xl font-bold">
+              {t.inviteCopiedTitle}
+            </DialogTitle>
+            <DialogDescription className="text-gray-300 text-sm text-center">
+              {t.inviteCopied}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="sm:justify-center">
+            <Button
+              onClick={() => setShowCopiedModal(false)}
+              className="bg-purple-600 hover:bg-purple-500 text-white font-semibold px-8"
+            >
+              {t.close}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
