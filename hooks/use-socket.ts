@@ -56,6 +56,7 @@ export function useSocket() {
   };
 
   const createLocalGame = (playerNames: string[]) => {
+    setIsCreatingRoom(true);
     socket?.emit("createLocalGame", playerNames);
   };
 
@@ -67,6 +68,10 @@ export function useSocket() {
     socket?.emit("startGame", gameId);
   };
 
+  const resetGame = () => {
+    setGameState(null);
+  };
+
   return {
     socket,
     gameState,
@@ -75,5 +80,6 @@ export function useSocket() {
     createLocalGame,
     joinGame,
     startGame,
+    resetGame,
   };
 }

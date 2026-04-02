@@ -18,7 +18,7 @@ export function GameLobby() {
   const [showRules, setShowRules] = useState(false);
   const [loadingMsgIndex, setLoadingMsgIndex] = useState(0);
   const [localPlayerNames, setLocalPlayerNames] = useState<string[]>(["", ""]);
-  const { socket, gameState, isCreatingRoom, createGame, createLocalGame, joinGame, startGame } = useSocket();
+  const { socket, gameState, isCreatingRoom, createGame, createLocalGame, joinGame, startGame, resetGame } = useSocket();
   const { t } = useLanguage();
 
   useEffect(() => {
@@ -53,6 +53,7 @@ export function GameLobby() {
   };
 
   const handleRestartGame = () => {
+    resetGame();
     setView("join");
   };
 
