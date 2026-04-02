@@ -75,10 +75,50 @@ io.on("connection", (socket) => {
     socket.emit("gameCreated", { gameId, gameState });
   });
 
+  socket.on("createLocalGame", (playerNames: string[]) => {
+    if (!Array.isArray(playerNames) || playerNames.length < 2) return;
+
+    const gameId = Math.random().toString(36).substring(2, 8);
+    const players: Player[] = playerNames.map((name, index) => ({
+      id: `local_${index}`,
+      name,
+      cards: [],
+      lastDrawnCard: null,
+      status: "start",
+      secondChance: false,
+      score: 0,
+    }));
+
+    const deck = generateDeck();
+    const gameState: GameState = {
+      id: gameId,
+      players,
+      currentPlayer: 0,
+      deck,
+      discardPile: [deck.pop()!],
+      direction: 1,
+      status: "playing",
+      flipCount: 1,
+      round: 1,
+      lastEvent: null,
+      isLocal: true,
+      hostSocketId: socket.id,
+    };
+
+    games.set(gameId, gameState);
+    socket.join(gameId);
+    socket.emit("gameCreated", { gameId, gameState });
+  });
+
   socket.on("joinGame", ({ gameId, playerName }) => {
     const game = games.get(gameId);
     if (!game) {
       socket.emit("error", "Game not found");
+      return;
+    }
+
+    if (game.isLocal) {
+      socket.emit("error", "Cannot join a local game");
       return;
     }
 
@@ -129,7 +169,10 @@ io.on("connection", (socket) => {
     if (!game) return;
 
     const currentPlayer = game.players[game.currentPlayer];
-    if (currentPlayer.id !== socket.id) return;
+    const isAuthorized = game.isLocal
+      ? game.hostSocketId === socket.id
+      : currentPlayer.id === socket.id;
+    if (!isAuthorized) return;
 
     const victim = game.players.find((p) => p.id === victimId);
     const freezePointsAdded =
@@ -162,7 +205,10 @@ io.on("connection", (socket) => {
     }
 
     const currentPlayer = game.players[game.currentPlayer];
-    if (currentPlayer.id !== socket.id) {
+    const isAuthorizedDraw = game.isLocal
+      ? game.hostSocketId === socket.id
+      : currentPlayer.id === socket.id;
+    if (!isAuthorizedDraw) {
       return;
     }
 
@@ -264,7 +310,10 @@ io.on("connection", (socket) => {
     if (!game) return;
 
     const currentPlayer = game.players[game.currentPlayer];
-    if (currentPlayer.id !== socket.id) return;
+    const isAuthorizedStop = game.isLocal
+      ? game.hostSocketId === socket.id
+      : currentPlayer.id === socket.id;
+    if (!isAuthorizedStop) return;
 
     const stopPointsAdded = handleScoreCards(currentPlayer.cards);
     currentPlayer.score = currentPlayer.score + stopPointsAdded;

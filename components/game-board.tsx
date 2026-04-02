@@ -94,19 +94,33 @@ export function GameBoard({
   const [isPlaying, setIsPlaying] = useState<SoundKey | null>(null);
   const [volumeState, setVolumeState] = useState<"full" | "low" | "muted">("full");
   const [broadcastEvent, setBroadcastEvent] = useState<LastEvent | null>(null);
+  const [showPassScreen, setShowPassScreen] = useState(gameState.isLocal ?? false);
+  const [passToPlayerIndex, setPassToPlayerIndex] = useState(gameState.currentPlayer);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const prevLastEventRef = useRef<LastEvent | null>(null);
   const broadcastTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const prevLastDrawnCardRef = useRef<Card | null | undefined>(undefined);
+  const prevCurrentPlayerRef = useRef<number>(gameState.currentPlayer);
 
   const isGameFinished =
     gameState.status === "finished" &&
     gameState.players.every((p) => p.status === "stop");
   const currentPlayer = gameState.players[gameState.currentPlayer];
-  const thisPlayer = gameState.players.find(
-    (player) => player.id === socket.id
-  );
-  const isCurrentPlayer = currentPlayer?.id === socket.id;
+  // In local mode all players share the socket; treat the current player as "thisPlayer"
+  const thisPlayer = gameState.isLocal
+    ? currentPlayer
+    : gameState.players.find((player) => player.id === socket.id);
+  const isCurrentPlayer = gameState.isLocal ? true : currentPlayer?.id === socket.id;
+
+  // Detect turn changes in local mode and show the pass-device screen
+  useEffect(() => {
+    if (!gameState.isLocal || isGameFinished) return;
+    if (prevCurrentPlayerRef.current !== gameState.currentPlayer) {
+      prevCurrentPlayerRef.current = gameState.currentPlayer;
+      setPassToPlayerIndex(gameState.currentPlayer);
+      setShowPassScreen(true);
+    }
+  }, [gameState.currentPlayer, gameState.isLocal, isGameFinished]);
 
   // Detect lastEvent changes and trigger broadcast overlay
   useEffect(() => {
@@ -361,6 +375,40 @@ export function GameBoard({
         </div>
       )}
 
+      {/* Pass-device screen for local multiplayer */}
+      {showPassScreen && gameState.isLocal && !isGameFinished && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center"
+          style={{ background: "rgba(0,0,0,0.92)", backdropFilter: "blur(8px)" }}
+        >
+          <div
+            className="rounded-3xl px-10 py-10 flex flex-col items-center gap-6 animate-float-in max-w-sm w-full mx-4"
+            style={{
+              background: "rgba(15,10,30,0.98)",
+              border: "1px solid rgba(16,185,129,0.4)",
+              boxShadow: "0 0 50px rgba(16,185,129,0.2)",
+            }}
+          >
+            <div className="text-6xl">🎮</div>
+            <div className="text-center">
+              <p className="text-xl font-black text-white leading-tight">
+                {t.passDeviceTitle(gameState.players[passToPlayerIndex]?.name ?? "")}
+              </p>
+            </div>
+            <Button
+              onClick={() => setShowPassScreen(false)}
+              className={cn(
+                "w-full h-14 text-lg font-black rounded-2xl transition-all duration-200",
+                "bg-gradient-to-r from-green-600 to-teal-600",
+                "hover:from-green-500 hover:to-teal-500 hover:scale-105",
+                "shadow-[0_0_20px_rgba(16,185,129,0.5)]"
+              )}
+            >
+              {t.passDeviceReady}
+            </Button>
+          </div>
+        </div>
+      )}
+
       <div className="grid grid-cols-1 gap-3">
         {/* Game Info Bar */}
         <div
@@ -383,7 +431,7 @@ export function GameBoard({
                   {gameState.id.toUpperCase()}
                 </span>
               </div>
-              {(gameState.status === "waiting" || gameState.status === "ready") && (
+              {!gameState.isLocal && (gameState.status === "waiting" || gameState.status === "ready") && (
                 <Button
                   size="sm"
                   variant="outline"
@@ -451,7 +499,11 @@ export function GameBoard({
         {/* Other Players */}
         <div className="flex flex-col gap-2">
           {gameState.players
-            .filter((player) => player.id !== thisPlayer?.id)
+            .filter((player) =>
+              gameState.isLocal
+                ? player.id !== currentPlayer?.id
+                : player.id !== thisPlayer?.id
+            )
             .map((player) => (
               <PlayerInfo
                 key={player.id}
