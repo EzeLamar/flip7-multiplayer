@@ -41,4 +41,6 @@ export interface GameState {
   flipCount: number;
   status: "waiting" | "ready" | "playing" | "stopped" | "finished";
   lastEvent: LastEvent | null;
+  isLocal?: boolean;
+  hostSocketId?: string;
 }

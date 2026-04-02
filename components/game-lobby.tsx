@@ -14,10 +14,11 @@ const LOADING_MESSAGE_INTERVAL_MS = 2500;
 export function GameLobby() {
   const [playerName, setPlayerName] = useState("");
   const [gameId, setGameId] = useState("");
-  const [view, setView] = useState<"join" | "create" | "game">("join");
+  const [view, setView] = useState<"join" | "create" | "local" | "game">("join");
   const [showRules, setShowRules] = useState(false);
   const [loadingMsgIndex, setLoadingMsgIndex] = useState(0);
-  const { socket, gameState, isCreatingRoom, createGame, joinGame, startGame } = useSocket();
+  const [localPlayerNames, setLocalPlayerNames] = useState<string[]>(["", ""]);
+  const { socket, gameState, isCreatingRoom, createGame, createLocalGame, joinGame, startGame } = useSocket();
   const { t } = useLanguage();
 
   useEffect(() => {
@@ -41,6 +42,13 @@ export function GameLobby() {
   const handleCreateGame = () => {
     if (!playerName) return;
     createGame(playerName);
+    setView("game");
+  };
+
+  const handleStartLocalGame = () => {
+    const names = localPlayerNames.map((n) => n.trim()).filter(Boolean);
+    if (names.length < 2) return;
+    createLocalGame(names);
     setView("game");
   };
 
@@ -182,84 +190,166 @@ export function GameLobby() {
         {/* Section heading */}
         <div className="text-center mb-2">
           <span className="text-xs tracking-[0.2em] uppercase text-purple-400 font-semibold">
-            {view === "join" ? t.joinGame : t.createGame}
+            {view === "join" ? t.joinGame : view === "create" ? t.createGame : t.localPlayersTitle}
           </span>
         </div>
 
-        <Input
-          placeholder={t.yourName}
-          value={playerName}
-          onChange={(e) => setPlayerName(e.target.value)}
-          className={cn(
-            "w-full bg-white/10 border-purple-500/40 text-white placeholder:text-gray-500",
-            "focus:border-purple-400 focus:ring-1 focus:ring-purple-400/40",
-            "rounded-xl h-12 text-base"
-          )}
-        />
+        {view === "local" ? (
+          /* ── Local Multiplayer: player name list ── */
+          <div className="space-y-3">
+            {localPlayerNames.map((name, i) => (
+              <div key={i} className="flex gap-2 items-center">
+                <Input
+                  placeholder={`${t.yourName} ${i + 1}`}
+                  value={name}
+                  onChange={(e) => {
+                    const updated = [...localPlayerNames];
+                    updated[i] = e.target.value;
+                    setLocalPlayerNames(updated);
+                  }}
+                  className={cn(
+                    "flex-1 bg-white/10 border-purple-500/40 text-white placeholder:text-gray-500",
+                    "focus:border-purple-400 focus:ring-1 focus:ring-purple-400/40",
+                    "rounded-xl h-11 text-base"
+                  )}
+                />
+                {localPlayerNames.length > 2 && (
+                  <button
+                    onClick={() =>
+                      setLocalPlayerNames(localPlayerNames.filter((_, idx) => idx !== i))
+                    }
+                    className="text-xs text-red-400 hover:text-red-300 px-2 py-1 rounded-lg hover:bg-red-500/10 transition-colors"
+                  >
+                    {t.removePlayer}
+                  </button>
+                )}
+              </div>
+            ))}
 
-        {view === "join" ? (
-          <>
-            <Input
-              placeholder={t.gameCode}
-              value={gameId}
-              onChange={(e) => setGameId(e.target.value.toUpperCase())}
-              className={cn(
-                "w-full bg-white/10 border-purple-500/40 text-white placeholder:text-gray-500",
-                "focus:border-purple-400 focus:ring-1 focus:ring-purple-400/40",
-                "rounded-xl h-12 text-base font-mono tracking-widest"
-              )}
-            />
+            {localPlayerNames.length < 8 && (
+              <button
+                onClick={() => setLocalPlayerNames([...localPlayerNames, ""])}
+                className="w-full text-sm text-purple-400 hover:text-purple-300 transition-colors border border-dashed border-purple-500/30 rounded-xl py-2 hover:border-purple-400/50"
+              >
+                {t.addPlayer}
+              </button>
+            )}
+
             <Button
-              onClick={handleJoinGame}
-              disabled={!playerName || !gameId}
+              onClick={handleStartLocalGame}
+              disabled={localPlayerNames.filter((n) => n.trim()).length < 2}
               className={cn(
                 "w-full h-12 text-base font-bold rounded-xl transition-all duration-200",
-                "bg-gradient-to-r from-purple-600 to-pink-600",
-                "hover:from-purple-500 hover:to-pink-500",
+                "bg-gradient-to-r from-green-600 to-teal-600",
+                "hover:from-green-500 hover:to-teal-500",
                 "disabled:opacity-40 disabled:cursor-not-allowed",
-                "shadow-[0_0_15px_rgba(168,85,247,0.4)] hover:shadow-[0_0_25px_rgba(168,85,247,0.6)]"
+                "shadow-[0_0_15px_rgba(16,185,129,0.4)] hover:shadow-[0_0_25px_rgba(16,185,129,0.6)]"
               )}
             >
-              {t.joinGameBtn}
+              🎮 {t.startLocalGame}
             </Button>
-            <Button
-              variant="outline"
-              onClick={() => setView("create")}
-              className={cn(
-                "w-full h-12 text-base font-semibold rounded-xl transition-all duration-200",
-                "border-purple-500/40 text-purple-300 bg-transparent",
-                "hover:bg-purple-500/20 hover:border-purple-400 hover:text-purple-200"
-              )}
-            >
-              {t.createNewGame}
-            </Button>
-          </>
-        ) : (
-          <>
-            <Button
-              onClick={handleCreateGame}
-              disabled={!playerName}
-              className={cn(
-                "w-full h-12 text-base font-bold rounded-xl transition-all duration-200",
-                "bg-gradient-to-r from-purple-600 to-pink-600",
-                "hover:from-purple-500 hover:to-pink-500",
-                "disabled:opacity-40 disabled:cursor-not-allowed",
-                "shadow-[0_0_15px_rgba(168,85,247,0.4)] hover:shadow-[0_0_25px_rgba(168,85,247,0.6)]"
-              )}
-            >
-              {t.createGameBtn}
-            </Button>
+
             <Button
               variant="outline"
               onClick={() => setView("join")}
               className={cn(
-                "w-full h-12 text-base font-semibold rounded-xl transition-all duration-200",
+                "w-full h-10 text-sm font-semibold rounded-xl transition-all duration-200",
                 "border-purple-500/40 text-purple-300 bg-transparent",
                 "hover:bg-purple-500/20 hover:border-purple-400 hover:text-purple-200"
               )}
             >
-              {t.joinExistingGame}
+              {t.backToMenu}
             </Button>
+          </div>
+        ) : (
+          <>
+            <Input
+              placeholder={t.yourName}
+              value={playerName}
+              onChange={(e) => setPlayerName(e.target.value)}
+              className={cn(
+                "w-full bg-white/10 border-purple-500/40 text-white placeholder:text-gray-500",
+                "focus:border-purple-400 focus:ring-1 focus:ring-purple-400/40",
+                "rounded-xl h-12 text-base"
+              )}
+            />
+
+            {view === "join" ? (
+              <>
+                <Input
+                  placeholder={t.gameCode}
+                  value={gameId}
+                  onChange={(e) => setGameId(e.target.value.toUpperCase())}
+                  className={cn(
+                    "w-full bg-white/10 border-purple-500/40 text-white placeholder:text-gray-500",
+                    "focus:border-purple-400 focus:ring-1 focus:ring-purple-400/40",
+                    "rounded-xl h-12 text-base font-mono tracking-widest"
+                  )}
+                />
+                <Button
+                  onClick={handleJoinGame}
+                  disabled={!playerName || !gameId}
+                  className={cn(
+                    "w-full h-12 text-base font-bold rounded-xl transition-all duration-200",
+                    "bg-gradient-to-r from-purple-600 to-pink-600",
+                    "hover:from-purple-500 hover:to-pink-500",
+                    "disabled:opacity-40 disabled:cursor-not-allowed",
+                    "shadow-[0_0_15px_rgba(168,85,247,0.4)] hover:shadow-[0_0_25px_rgba(168,85,247,0.6)]"
+                  )}
+                >
+                  {t.joinGameBtn}
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => setView("create")}
+                  className={cn(
+                    "w-full h-12 text-base font-semibold rounded-xl transition-all duration-200",
+                    "border-purple-500/40 text-purple-300 bg-transparent",
+                    "hover:bg-purple-500/20 hover:border-purple-400 hover:text-purple-200"
+                  )}
+                >
+                  {t.createNewGame}
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => setView("local")}
+                  className={cn(
+                    "w-full h-12 text-base font-semibold rounded-xl transition-all duration-200",
+                    "border-green-500/40 text-green-300 bg-transparent",
+                    "hover:bg-green-500/20 hover:border-green-400 hover:text-green-200"
+                  )}
+                >
+                  🎮 {t.localMultiplayer}
+                </Button>
+              </>
+            ) : (
+              <>
+                <Button
+                  onClick={handleCreateGame}
+                  disabled={!playerName}
+                  className={cn(
+                    "w-full h-12 text-base font-bold rounded-xl transition-all duration-200",
+                    "bg-gradient-to-r from-purple-600 to-pink-600",
+                    "hover:from-purple-500 hover:to-pink-500",
+                    "disabled:opacity-40 disabled:cursor-not-allowed",
+                    "shadow-[0_0_15px_rgba(168,85,247,0.4)] hover:shadow-[0_0_25px_rgba(168,85,247,0.6)]"
+                  )}
+                >
+                  {t.createGameBtn}
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => setView("join")}
+                  className={cn(
+                    "w-full h-12 text-base font-semibold rounded-xl transition-all duration-200",
+                    "border-purple-500/40 text-purple-300 bg-transparent",
+                    "hover:bg-purple-500/20 hover:border-purple-400 hover:text-purple-200"
+                  )}
+                >
+                  {t.joinExistingGame}
+                </Button>
+              </>
+            )}
           </>
         )}
 
