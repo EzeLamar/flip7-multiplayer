@@ -45,7 +45,7 @@ function checkGameOver(io: Server, gameId: string, game: GameState) {
 io.on("connection", (socket) => {
   console.log("Client connected:", socket.id);
 
-  socket.on("createGame", (playerName: string) => {
+  socket.on("createGame", ({ playerName, mode }: { playerName: string; mode: "classic" | "vengeance" }) => {
     const gameId = Math.random().toString(36).substring(2, 8);
     const player: Player = {
       id: socket.id,
@@ -59,9 +59,10 @@ io.on("connection", (socket) => {
 
     const gameState: GameState = {
       id: gameId,
+      mode: mode ?? "classic",
       players: [player],
       currentPlayer: 0,
-      deck: generateDeck(),
+      deck: generateDeck(mode ?? "classic"),
       discardPile: [],
       direction: 1,
       status: "waiting",

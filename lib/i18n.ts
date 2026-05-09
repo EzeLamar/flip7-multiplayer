@@ -127,6 +127,15 @@ export const translations = {
       "Add +15 if FLIP 7 was achieved.",
     ],
 
+    // mode selector
+    gameMode: "Game Mode",
+    modeClassic: "Classic",
+    modeClassicDesc: "The original Flip 7 — numbers, modifiers, Freeze, Flip Three & Second Chance.",
+    modeVengeance: "With a Vengeance",
+    modeVengeanceDesc: "Adds 5 new action cards, Lucky 13, Unlucky 7, and the ÷2 modifier.",
+    modeVengeanceBadge: "VENGEANCE",
+    modeClassicBadge: "CLASSIC",
+
     // game-board
     round: "Round",
     room: "Room",
@@ -308,6 +317,15 @@ export const translations = {
     ],
 
     // game-board
+    // mode selector
+    gameMode: "Modo de Juego",
+    modeClassic: "Clásico",
+    modeClassicDesc: "El Flip 7 original — números, modificadores, Freeze, Flip Three y Second Chance.",
+    modeVengeance: "With a Vengeance",
+    modeVengeanceDesc: "Agrega 5 nuevas cartas de acción, Lucky 13, Unlucky 7 y el modificador ÷2.",
+    modeVengeanceBadge: "VENGEANCE",
+    modeClassicBadge: "CLÁSICO",
+
     round: "Ronda",
     room: "Sala",
     invite: "Invitar",

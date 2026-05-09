@@ -50,9 +50,9 @@ export function useSocket() {
     };
   }, []);
 
-  const createGame = (playerName: string) => {
+  const createGame = (playerName: string, mode: "classic" | "vengeance" = "classic") => {
     setIsCreatingRoom(true);
-    socket?.emit("createGame", playerName);
+    socket?.emit("createGame", { playerName, mode });
   };
 
   const joinGame = (gameId: string, playerName: string) => {

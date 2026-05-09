@@ -35,6 +35,7 @@ export interface LastEvent {
 
 export interface GameState {
   id: string;
+  mode: "classic" | "vengeance";
   round: number;
   players: Player[];
   currentPlayer: number;
