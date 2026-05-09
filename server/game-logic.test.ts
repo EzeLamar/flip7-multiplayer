@@ -27,6 +27,7 @@ function makePlayer(overrides: Partial<Player> = {}): Player {
 function makeGame(overrides: Partial<GameState> = {}): GameState {
   return {
     id: "test",
+    mode: "classic",
     round: 1,
     players: [],
     currentPlayer: 0,
