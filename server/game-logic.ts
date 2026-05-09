@@ -6,8 +6,8 @@ export function generateDeck(): Card[] {
   // Generates ["0","1","2",...,"12"]; the loop adds i copies of each value
   // ("0" contributes 0 copies, handled by the explicit push below)
   const numbers = Array.from({ length: 13 }, (_, i) => i.toString());
-  const modifiers = ["x2", "+2", "+4", "+6", "+8", "+10"];
-  const specials = ["freeze", "flip three", "second chance"];
+  const modifiers = ["x2", "+2", "+4", "+6", "+8", "+10", "÷2"];
+  const specials = ["freeze", "flip three", "second chance", "flip four", "just one more", "steal", "discard", "swap"];
   const deck: Card[] = [];
 
   deck.push({ value: "0", type: "number" });
@@ -16,6 +16,9 @@ export function generateDeck(): Card[] {
       deck.push({ value: number, type: "number" });
     }
   });
+  // Vengeance special number cards
+  deck.push({ value: "lucky 13", type: "number" });
+  deck.push({ value: "unlucky 7", type: "number" });
   modifiers.forEach((modifier) => {
     deck.push({ value: modifier, type: "modifier" });
   });
@@ -51,9 +54,12 @@ export function handleScoreCards(cards: Card[]): number {
   numberCards.forEach((card) => {
     score += parseInt(card.value);
   });
-  // Apply x2 first (doubles number-card total), then additive modifiers
+  // Apply x2 first (doubles number-card total), then ÷2, then additive modifiers
   if (modifierCards.some((card) => card.value === "x2")) {
     score *= 2;
+  }
+  if (modifierCards.some((card) => card.value === "÷2")) {
+    score = Math.floor(score / 2);
   }
   modifierCards.forEach((card) => {
     switch (card.value) {
@@ -83,6 +89,46 @@ export function handleDrawNumberCard(
   player: Player,
   newCard: Card
 ): PlayerHandStatus {
+  // Unlucky 7: discard all current number cards from hand
+  if (newCard.value === "unlucky 7") {
+    player.cards = player.cards.filter((card) => card.type !== "number");
+    return "unlucky7" as PlayerHandStatus;
+  }
+
+  // Lucky 13 bust logic: "13" and "lucky 13" share the same slot.
+  // Two cards of the 13-family → no bust. Three → bust.
+  const is13Family = newCard.value === "13" || newCard.value === "lucky 13";
+  if (is13Family) {
+    const family13Count = player.cards.filter(
+      (c) => c.type === "number" && (c.value === "13" || c.value === "lucky 13")
+    ).length;
+    if (family13Count >= 2) {
+      // Third 13-family card causes bust
+      if (player.secondChance) {
+        const firstIndex = player.cards.findIndex(
+          (c) => c.value === "13" || c.value === "lucky 13"
+        );
+        player.cards.splice(firstIndex, 1);
+        const scIndex = player.cards.findIndex((c) => c.value === "second chance");
+        player.cards.splice(scIndex, 1);
+        player.secondChance = false;
+        return "useSecondChance";
+      }
+      player.status = "stop";
+      game.flipCount = 1;
+      return "duplicates";
+    }
+    // One or zero 13-family cards: no bust, treat as unique for Flip 7 purposes
+    if (player.cards.filter((card) => card.type === "number").length === 6) {
+      player.status = "stop";
+      game.flipCount = 1;
+      player.secondChance = false;
+      player.score = player.score + handleScoreCards([...player.cards, newCard]) + 15;
+      return "flip7";
+    }
+    return "normal";
+  }
+
   if (
     player.cards
       .filter((card) => card.type === "number")
@@ -128,7 +174,9 @@ export function handleDrawSpecialCard(_player: Player, _newCard: Card) {
 export function handlePlaySpecialCard(
   game: GameState,
   victimId: string,
-  playedCard: Card
+  playedCard: Card,
+  targetCard?: Card,
+  sourceCard?: Card
 ) {
   const victim = game.players.find((player) => player.id === victimId);
   const currentPlayer = game.players[game.currentPlayer];
@@ -181,6 +229,65 @@ export function handlePlaySpecialCard(
 
     return;
   }
+
+  if (playedCard.value === "flip four") {
+    game.flipCount = game.flipCount + 4;
+    game.currentPlayer = game.players.findIndex((p) => p.id === victimId);
+    return;
+  }
+
+  if (playedCard.value === "just one more") {
+    game.flipCount = game.flipCount + 1;
+    game.currentPlayer = game.players.findIndex((p) => p.id === victimId);
+    victim.pendingJustOneMore = true;
+    return;
+  }
+
+  if (playedCard.value === "steal" && targetCard) {
+    const cardIndex = victim.cards.findIndex(
+      (c) => c.value === targetCard.value && c.type === targetCard.type
+    );
+    if (cardIndex !== -1) {
+      const [stolen] = victim.cards.splice(cardIndex, 1);
+      currentPlayer.cards.push(stolen);
+    }
+    if (game.flipCount === 1) {
+      game.currentPlayer = getNextPlayerIndex(game);
+    }
+    return;
+  }
+
+  if (playedCard.value === "discard" && targetCard) {
+    const cardIndex = victim.cards.findIndex(
+      (c) => c.value === targetCard.value && c.type === targetCard.type
+    );
+    if (cardIndex !== -1) {
+      victim.cards.splice(cardIndex, 1);
+    }
+    if (game.flipCount === 1) {
+      game.currentPlayer = getNextPlayerIndex(game);
+    }
+    return;
+  }
+
+  if (playedCard.value === "swap" && targetCard && sourceCard) {
+    const victimCardIndex = victim.cards.findIndex(
+      (c) => c.value === targetCard.value && c.type === targetCard.type
+    );
+    const attackerCardIndex = currentPlayer.cards.findIndex(
+      (c) => c.value === sourceCard.value && c.type === sourceCard.type
+    );
+    if (victimCardIndex !== -1 && attackerCardIndex !== -1) {
+      const [victimCard] = victim.cards.splice(victimCardIndex, 1);
+      const [attackerCard] = currentPlayer.cards.splice(attackerCardIndex, 1);
+      victim.cards.push(attackerCard);
+      currentPlayer.cards.push(victimCard);
+    }
+    if (game.flipCount === 1) {
+      game.currentPlayer = getNextPlayerIndex(game);
+    }
+    return;
+  }
 }
 
 export function getNextPlayerIndex(game: GameState): number {
@@ -219,7 +326,7 @@ export function getNextPlayerIndex(game: GameState): number {
 }
 
 export function reshuffleDeck(game: GameState) {
-  const specials = ["freeze", "flip three", "second chance"];
+  const specials = ["freeze", "flip three", "second chance", "flip four", "just one more", "steal", "discard", "swap"];
 
   const topCard = game.discardPile.pop()!;
   specials.forEach((special) => {
@@ -227,6 +334,9 @@ export function reshuffleDeck(game: GameState) {
       game.discardPile.push({ value: special, type: "special" });
     }
   });
+  game.discardPile.push({ value: "÷2", type: "modifier" });
+  game.discardPile.push({ value: "lucky 13", type: "number" });
+  game.discardPile.push({ value: "unlucky 7", type: "number" });
   game.deck = shuffle(game.discardPile);
   game.discardPile = [topCard];
 }

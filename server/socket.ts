@@ -124,7 +124,7 @@ io.on("connection", (socket) => {
     io.to(gameId).emit("gameStarted", { gameState: game });
   });
 
-  socket.on("playCard", ({ gameId, victimId, playedCard }) => {
+  socket.on("playCard", ({ gameId, victimId, playedCard, targetCard, sourceCard }) => {
     const game = games.get(gameId);
     if (!game) return;
 
@@ -139,7 +139,7 @@ io.on("connection", (socket) => {
 
     currentPlayer.cards.pop();
 
-    handlePlaySpecialCard(game, victimId, playedCard);
+    handlePlaySpecialCard(game, victimId, playedCard, targetCard, sourceCard);
     currentPlayer.lastDrawnCard = null;
 
     if (playedCard.value === "freeze") {
@@ -148,6 +148,16 @@ io.on("connection", (socket) => {
       game.lastEvent = { type: "flip-three", targetName: victim?.name, sourceName: currentPlayer.name };
     } else if (playedCard.value === "second chance") {
       game.lastEvent = { type: "second-chance", targetName: victim?.name, sourceName: currentPlayer.name };
+    } else if (playedCard.value === "flip four") {
+      game.lastEvent = { type: "flip-four", targetName: victim?.name, sourceName: currentPlayer.name };
+    } else if (playedCard.value === "just one more") {
+      game.lastEvent = { type: "just-one-more", targetName: victim?.name, sourceName: currentPlayer.name };
+    } else if (playedCard.value === "steal") {
+      game.lastEvent = { type: "steal", targetName: victim?.name, sourceName: currentPlayer.name, stolenCard: targetCard?.value };
+    } else if (playedCard.value === "discard") {
+      game.lastEvent = { type: "discard", targetName: victim?.name, sourceName: currentPlayer.name, stolenCard: targetCard?.value };
+    } else if (playedCard.value === "swap") {
+      game.lastEvent = { type: "swap", targetName: victim?.name, sourceName: currentPlayer.name };
     }
 
     io.to(gameId).emit("gameStateUpdated", { gameState: game });
@@ -205,20 +215,48 @@ io.on("connection", (socket) => {
               player.score += handleScoreCards(player.cards);
               player.status = "stop";
               player.secondChance = false;
+              player.pendingJustOneMore = false;
             }
           });
           if (game.players.some((p) => p.score >= MAX_SCORE)) {
             game.status = "finished";
           }
           game.currentPlayer = getNextPlayerIndex(game);
+        } else if (callbackResponse.status === "unlucky7") {
+          game.lastEvent = { type: "unlucky-seven", targetName: currentPlayer.name };
+          // Unlucky 7 clears number cards; card itself was already added in handleDrawNumberCard
+          // Pass turn normally
+          if (game.flipCount > 1) {
+            game.flipCount -= 1;
+            if (game.flipCount === 1) {
+              // Check pendingJustOneMore after forced draw completes
+              if (currentPlayer.pendingJustOneMore) {
+                currentPlayer.pendingJustOneMore = false;
+                currentPlayer.score += handleScoreCards(currentPlayer.cards);
+                currentPlayer.status = "stop";
+                if (currentPlayer.score >= MAX_SCORE) game.status = "finished";
+              }
+              game.currentPlayer = getNextPlayerIndex(game);
+            }
+          } else {
+            game.currentPlayer = getNextPlayerIndex(game);
+          }
         } else if (callbackResponse.status === "duplicates") {
+          currentPlayer.pendingJustOneMore = false;
           game.lastEvent = { type: "bust", targetName: currentPlayer.name };
           // Player busted: pass turn
           game.currentPlayer = getNextPlayerIndex(game);
         } else if (game.flipCount > 1) {
-          // Inside a Flip Three sequence: decrement counter
+          // Inside a Flip Three/Four/JustOneMore sequence: decrement counter
           game.flipCount -= 1;
           if (game.flipCount === 1) {
+            // Forced draw sequence complete — check if Just One More auto-stop applies
+            if (currentPlayer.pendingJustOneMore) {
+              currentPlayer.pendingJustOneMore = false;
+              currentPlayer.score += handleScoreCards(currentPlayer.cards);
+              currentPlayer.status = "stop";
+              if (currentPlayer.score >= MAX_SCORE) game.status = "finished";
+            }
             game.currentPlayer = getNextPlayerIndex(game);
           }
         } else {
@@ -230,6 +268,12 @@ io.on("connection", (socket) => {
         if (game.flipCount > 1) {
           game.flipCount -= 1;
           if (game.flipCount === 1) {
+            if (currentPlayer.pendingJustOneMore) {
+              currentPlayer.pendingJustOneMore = false;
+              currentPlayer.score += handleScoreCards(currentPlayer.cards);
+              currentPlayer.status = "stop";
+              if (currentPlayer.score >= MAX_SCORE) game.status = "finished";
+            }
             game.currentPlayer = getNextPlayerIndex(game);
           }
         } else {
@@ -242,6 +286,12 @@ io.on("connection", (socket) => {
         if (game.flipCount > 1) {
           game.flipCount -= 1;
           if (game.flipCount === 1) {
+            if (currentPlayer.pendingJustOneMore) {
+              currentPlayer.pendingJustOneMore = false;
+              currentPlayer.score += handleScoreCards(currentPlayer.cards);
+              currentPlayer.status = "stop";
+              if (currentPlayer.score >= MAX_SCORE) game.status = "finished";
+            }
             game.currentPlayer = getNextPlayerIndex(game);
           }
         }
