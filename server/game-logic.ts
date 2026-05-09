@@ -2,12 +2,16 @@ import { GameState, Card, Player, PlayerHandStatus } from "@/lib/types";
 
 const MAX_SCORE = 200;
 
-export function generateDeck(): Card[] {
+export function generateDeck(mode: "classic" | "vengeance" = "classic"): Card[] {
   // Generates ["0","1","2",...,"12"]; the loop adds i copies of each value
   // ("0" contributes 0 copies, handled by the explicit push below)
   const numbers = Array.from({ length: 13 }, (_, i) => i.toString());
-  const modifiers = ["x2", "+2", "+4", "+6", "+8", "+10", "÷2"];
-  const specials = ["freeze", "flip three", "second chance", "flip four", "just one more", "steal", "discard", "swap"];
+  const modifiers = mode === "vengeance"
+    ? ["x2", "+2", "+4", "+6", "+8", "+10", "÷2"]
+    : ["x2", "+2", "+4", "+6", "+8", "+10"];
+  const specials = mode === "vengeance"
+    ? ["freeze", "flip three", "second chance", "flip four", "just one more", "steal", "discard", "swap"]
+    : ["freeze", "flip three", "second chance"];
   const deck: Card[] = [];
 
   deck.push({ value: "0", type: "number" });
@@ -16,9 +20,10 @@ export function generateDeck(): Card[] {
       deck.push({ value: number, type: "number" });
     }
   });
-  // Vengeance special number cards
-  deck.push({ value: "lucky 13", type: "number" });
-  deck.push({ value: "unlucky 7", type: "number" });
+  if (mode === "vengeance") {
+    deck.push({ value: "lucky 13", type: "number" });
+    deck.push({ value: "unlucky 7", type: "number" });
+  }
   modifiers.forEach((modifier) => {
     deck.push({ value: modifier, type: "modifier" });
   });
@@ -326,7 +331,9 @@ export function getNextPlayerIndex(game: GameState): number {
 }
 
 export function reshuffleDeck(game: GameState) {
-  const specials = ["freeze", "flip three", "second chance", "flip four", "just one more", "steal", "discard", "swap"];
+  const specials = game.mode === "vengeance"
+    ? ["freeze", "flip three", "second chance", "flip four", "just one more", "steal", "discard", "swap"]
+    : ["freeze", "flip three", "second chance"];
 
   const topCard = game.discardPile.pop()!;
   specials.forEach((special) => {
@@ -334,9 +341,11 @@ export function reshuffleDeck(game: GameState) {
       game.discardPile.push({ value: special, type: "special" });
     }
   });
-  game.discardPile.push({ value: "÷2", type: "modifier" });
-  game.discardPile.push({ value: "lucky 13", type: "number" });
-  game.discardPile.push({ value: "unlucky 7", type: "number" });
+  if (game.mode === "vengeance") {
+    game.discardPile.push({ value: "÷2", type: "modifier" });
+    game.discardPile.push({ value: "lucky 13", type: "number" });
+    game.discardPile.push({ value: "unlucky 7", type: "number" });
+  }
   game.deck = shuffle(game.discardPile);
   game.discardPile = [topCard];
 }

@@ -17,6 +17,7 @@ export function GameLobby() {
   const [view, setView] = useState<"join" | "create" | "game">("join");
   const [showRules, setShowRules] = useState(false);
   const [loadingMsgIndex, setLoadingMsgIndex] = useState(0);
+  const [selectedMode, setSelectedMode] = useState<"classic" | "vengeance">("classic");
   const { socket, gameState, isCreatingRoom, createGame, joinGame, startGame } = useSocket();
   const { t } = useLanguage();
 
@@ -40,7 +41,7 @@ export function GameLobby() {
 
   const handleCreateGame = () => {
     if (!playerName) return;
-    createGame(playerName);
+    createGame(playerName, selectedMode);
     setView("game");
   };
 
@@ -236,15 +237,59 @@ export function GameLobby() {
           </>
         ) : (
           <>
+            {/* Mode selector */}
+            <div className="space-y-2">
+              <p className="text-xs text-purple-400 font-semibold tracking-widest uppercase text-center">
+                {t.gameMode}
+              </p>
+              <div className="grid grid-cols-2 gap-2">
+                {/* Classic option */}
+                <button
+                  onClick={() => setSelectedMode("classic")}
+                  className={cn(
+                    "relative rounded-xl p-3 text-left transition-all duration-200",
+                    "border-2 focus:outline-none",
+                    selectedMode === "classic"
+                      ? "border-purple-400 bg-purple-500/20 shadow-[0_0_16px_rgba(168,85,247,0.4)]"
+                      : "border-white/10 bg-white/5 hover:border-purple-500/40 hover:bg-white/10"
+                  )}
+                >
+                  {selectedMode === "classic" && (
+                    <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-purple-400" />
+                  )}
+                  <p className="text-sm font-bold text-white mb-1">🃏 {t.modeClassic}</p>
+                  <p className="text-xs text-gray-400 leading-snug">{t.modeClassicDesc}</p>
+                </button>
+
+                {/* Vengeance option */}
+                <button
+                  onClick={() => setSelectedMode("vengeance")}
+                  className={cn(
+                    "relative rounded-xl p-3 text-left transition-all duration-200",
+                    "border-2 focus:outline-none",
+                    selectedMode === "vengeance"
+                      ? "border-red-400 bg-red-500/20 shadow-[0_0_16px_rgba(239,68,68,0.4)]"
+                      : "border-white/10 bg-white/5 hover:border-red-500/40 hover:bg-white/10"
+                  )}
+                >
+                  {selectedMode === "vengeance" && (
+                    <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-red-400" />
+                  )}
+                  <p className="text-sm font-bold text-white mb-1">⚔️ {t.modeVengeance}</p>
+                  <p className="text-xs text-gray-400 leading-snug">{t.modeVengeanceDesc}</p>
+                </button>
+              </div>
+            </div>
+
             <Button
               onClick={handleCreateGame}
               disabled={!playerName}
               className={cn(
                 "w-full h-12 text-base font-bold rounded-xl transition-all duration-200",
-                "bg-gradient-to-r from-purple-600 to-pink-600",
-                "hover:from-purple-500 hover:to-pink-500",
-                "disabled:opacity-40 disabled:cursor-not-allowed",
-                "shadow-[0_0_15px_rgba(168,85,247,0.4)] hover:shadow-[0_0_25px_rgba(168,85,247,0.6)]"
+                selectedMode === "vengeance"
+                  ? "bg-gradient-to-r from-red-700 to-orange-600 hover:from-red-600 hover:to-orange-500 shadow-[0_0_15px_rgba(239,68,68,0.4)] hover:shadow-[0_0_25px_rgba(239,68,68,0.6)]"
+                  : "bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 shadow-[0_0_15px_rgba(168,85,247,0.4)] hover:shadow-[0_0_25px_rgba(168,85,247,0.6)]",
+                "disabled:opacity-40 disabled:cursor-not-allowed"
               )}
             >
               {t.createGameBtn}

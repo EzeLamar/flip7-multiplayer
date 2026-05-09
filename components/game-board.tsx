@@ -443,6 +443,15 @@ export function GameBoard({
             <div className="flex items-center gap-3">
               <span className="text-xs uppercase tracking-widest text-gray-500">{t.round}</span>
               <span className="text-2xl font-black text-white">{gameState.round}</span>
+              {gameState.mode === "vengeance" ? (
+                <span className="text-xs font-black tracking-widest px-2 py-0.5 rounded-full bg-red-900/60 border border-red-500/50 text-red-300">
+                  ⚔️ {t.modeVengeanceBadge}
+                </span>
+              ) : (
+                <span className="text-xs font-black tracking-widest px-2 py-0.5 rounded-full bg-purple-900/40 border border-purple-500/30 text-purple-400">
+                  🃏 {t.modeClassicBadge}
+                </span>
+              )}
             </div>
             <div className="flex items-center gap-3">
               <div className="flex items-center gap-2">
