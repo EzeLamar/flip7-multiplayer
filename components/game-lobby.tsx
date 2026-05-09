@@ -197,18 +197,17 @@ export function GameLobby() {
     );
   }
 
-  /* ── Mode button style helper ── */
+  /* ── Mode button style helper (compact, no desc inside) ── */
   const modeBtn = (
     mode: GameMode,
     icon: string,
     label: string,
-    desc: string,
     activeColor: { border: string; bg: string; dot: string; shadow: string }
   ) => (
     <button
       onClick={() => setSelectedMode(mode)}
       className={cn(
-        "relative rounded-xl p-3 text-left transition-all duration-200 w-full",
+        "relative rounded-xl p-2.5 text-center transition-all duration-200 w-full",
         "border-2 focus:outline-none",
         selectedMode === mode
           ? `${activeColor.border} ${activeColor.bg} ${activeColor.shadow}`
@@ -216,10 +215,10 @@ export function GameLobby() {
       )}
     >
       {selectedMode === mode && (
-        <span className={`absolute top-1.5 right-1.5 w-2 h-2 rounded-full ${activeColor.dot}`} />
+        <span className={`absolute top-1 right-1 w-2 h-2 rounded-full ${activeColor.dot}`} />
       )}
-      <p className="text-sm font-bold text-white mb-0.5">{icon} {label}</p>
-      <p className="text-xs text-gray-400 leading-snug">{desc}</p>
+      <p className="text-lg mb-0.5">{icon}</p>
+      <p className="text-xs font-bold text-white leading-tight">{label}</p>
     </button>
   );
 
@@ -352,20 +351,27 @@ export function GameLobby() {
               <p className="text-xs text-purple-400 font-semibold tracking-widest uppercase text-center">
                 {t.gameMode}
               </p>
-              <div className="grid grid-cols-2 gap-2">
-                {modeBtn("classic", "🃏", t.modeClassic, t.modeClassicDesc, {
+              <div className="grid grid-cols-3 gap-2">
+                {modeBtn("classic", "🃏", t.modeClassic, {
                   border: "border-purple-400", bg: "bg-purple-500/20", dot: "bg-purple-400",
                   shadow: "shadow-[0_0_16px_rgba(168,85,247,0.4)]",
                 })}
-                {modeBtn("vengeance", "⚔️", t.modeVengeance, t.modeVengeanceDesc, {
+                {modeBtn("vengeance", "⚔️", t.modeVengeance, {
                   border: "border-red-400", bg: "bg-red-500/20", dot: "bg-red-400",
                   shadow: "shadow-[0_0_16px_rgba(239,68,68,0.4)]",
                 })}
+                {modeBtn("custom", "⚙️", t.modeCustom, {
+                  border: "border-amber-400", bg: "bg-amber-500/15", dot: "bg-amber-400",
+                  shadow: "shadow-[0_0_16px_rgba(245,158,11,0.35)]",
+                })}
               </div>
-              {modeBtn("custom", "⚙️", t.modeCustom, t.modeCustomDesc, {
-                border: "border-amber-400", bg: "bg-amber-500/15", dot: "bg-amber-400",
-                shadow: "shadow-[0_0_16px_rgba(245,158,11,0.35)]",
-              })}
+              <p className="text-xs text-gray-400 leading-snug px-0.5">
+                {selectedMode === "classic"
+                  ? t.modeClassicDesc
+                  : selectedMode === "vengeance"
+                  ? t.modeVengeanceDesc
+                  : t.modeCustomDesc}
+              </p>
             </div>
 
             {/* ── Custom card picker ── */}
