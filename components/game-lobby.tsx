@@ -224,10 +224,10 @@ export function GameLobby() {
 
   /* ── Card toggle row helper ── */
   const CardToggleGroup = ({
-    labelKey,
+    label,
     cards,
   }: {
-    labelKey: string;
+    label: string;
     cards: CardDef[];
   }) => {
     const allOn = cards.every(isEnabled);
@@ -235,7 +235,7 @@ export function GameLobby() {
     return (
       <div className="space-y-1.5">
         <div className="flex items-center justify-between">
-          <p className="text-xs text-gray-400 font-semibold">{(t as Record<string, string>)[labelKey]}</p>
+          <p className="text-xs text-gray-400 font-semibold">{label}</p>
           <div className="flex gap-1">
             <button
               onClick={() => setGroupAll(cards, true)}
@@ -386,13 +386,13 @@ export function GameLobby() {
                 <p className="text-xs text-amber-400 font-bold tracking-widest uppercase text-center">
                   {t.customCardsTitle}
                 </p>
-                <CardToggleGroup labelKey="customGroupClassic" cards={CLASSIC_SPECIALS} />
+                <CardToggleGroup label={t.customGroupClassic} cards={CLASSIC_SPECIALS} />
                 <div className="border-t border-white/5" />
-                <CardToggleGroup labelKey="customGroupVengeanceAction" cards={VENGEANCE_ACTION} />
+                <CardToggleGroup label={t.customGroupVengeanceAction} cards={VENGEANCE_ACTION} />
                 <div className="border-t border-white/5" />
-                <CardToggleGroup labelKey="customGroupVengeanceNumber" cards={VENGEANCE_NUMBERS} />
+                <CardToggleGroup label={t.customGroupVengeanceNumber} cards={VENGEANCE_NUMBERS} />
                 <div className="border-t border-white/5" />
-                <CardToggleGroup labelKey="customGroupVengeanceMod" cards={VENGEANCE_MODS} />
+                <CardToggleGroup label={t.customGroupVengeanceMod} cards={VENGEANCE_MODS} />
               </div>
             )}
 
