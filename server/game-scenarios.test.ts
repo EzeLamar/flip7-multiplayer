@@ -34,6 +34,7 @@ function makePlayer(id: string, name: string, overrides: Partial<Player> = {}): 
 function makeGame(players: Player[]): GameState {
   return {
     id: "game1",
+    mode: "classic",
     round: 1,
     players,
     currentPlayer: 0,

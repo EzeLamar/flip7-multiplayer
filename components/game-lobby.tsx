@@ -7,9 +7,44 @@ import { GameBoard } from "@/components/game-board";
 import { useSocket } from "@/hooks/use-socket";
 import { cn } from "@/lib/utils";
 import { useLanguage } from "@/components/language-provider";
+import { GameCustomConfig } from "@/lib/types";
 
-/** Milliseconds between each loading message transition. */
 const LOADING_MESSAGE_INTERVAL_MS = 2500;
+
+type GameMode = "classic" | "vengeance" | "custom";
+
+interface CardDef {
+  icon: string;
+  label: string;
+  value: string;
+  configKey: keyof GameCustomConfig;
+}
+
+const CLASSIC_SPECIALS: CardDef[] = [
+  { icon: "❄️", label: "Freeze",         value: "freeze",        configKey: "enabledSpecials" },
+  { icon: "🎴", label: "Flip Three",     value: "flip three",    configKey: "enabledSpecials" },
+  { icon: "💖", label: "Second Chance",  value: "second chance", configKey: "enabledSpecials" },
+];
+const VENGEANCE_ACTION: CardDef[] = [
+  { icon: "🃏", label: "Flip Four",      value: "flip four",     configKey: "enabledSpecials" },
+  { icon: "➕", label: "Just One More",  value: "just one more", configKey: "enabledSpecials" },
+  { icon: "🫴", label: "Steal",          value: "steal",         configKey: "enabledSpecials" },
+  { icon: "🗑️", label: "Discard",        value: "discard",       configKey: "enabledSpecials" },
+  { icon: "🔄", label: "Swap",           value: "swap",          configKey: "enabledSpecials" },
+];
+const VENGEANCE_NUMBERS: CardDef[] = [
+  { icon: "🍀", label: "Lucky 13",  value: "lucky 13",  configKey: "enabledSpecialNumbers" },
+  { icon: "💀", label: "Unlucky 7", value: "unlucky 7", configKey: "enabledSpecialNumbers" },
+];
+const VENGEANCE_MODS: CardDef[] = [
+  { icon: "➗", label: "÷2", value: "÷2", configKey: "enabledVengeanceModifiers" },
+];
+
+const DEFAULT_CUSTOM: GameCustomConfig = {
+  enabledSpecials: ["freeze", "flip three", "second chance"],
+  enabledSpecialNumbers: [],
+  enabledVengeanceModifiers: [],
+};
 
 export function GameLobby() {
   const [playerName, setPlayerName] = useState("");
@@ -17,7 +52,8 @@ export function GameLobby() {
   const [view, setView] = useState<"join" | "create" | "game">("join");
   const [showRules, setShowRules] = useState(false);
   const [loadingMsgIndex, setLoadingMsgIndex] = useState(0);
-  const [selectedMode, setSelectedMode] = useState<"classic" | "vengeance">("classic");
+  const [selectedMode, setSelectedMode] = useState<GameMode>("classic");
+  const [customConfig, setCustomConfig] = useState<GameCustomConfig>(DEFAULT_CUSTOM);
   const { socket, gameState, isCreatingRoom, createGame, joinGame, startGame } = useSocket();
   const { t } = useLanguage();
 
@@ -39,15 +75,45 @@ export function GameLobby() {
     }
   }, []);
 
+  const toggleCard = (card: CardDef) => {
+    setCustomConfig((prev) => {
+      const list = prev[card.configKey] as string[];
+      const updated = list.includes(card.value)
+        ? list.filter((v) => v !== card.value)
+        : [...list, card.value];
+      return { ...prev, [card.configKey]: updated };
+    });
+  };
+
+  const setGroupAll = (cards: CardDef[], enabled: boolean) => {
+    setCustomConfig((prev) => {
+      const next = { ...prev };
+      cards.forEach((card) => {
+        const list = next[card.configKey] as string[];
+        if (enabled && !list.includes(card.value)) {
+          (next[card.configKey] as string[]) = [...list, card.value];
+        } else if (!enabled) {
+          (next[card.configKey] as string[]) = list.filter((v) => v !== card.value);
+        }
+      });
+      return next;
+    });
+  };
+
+  const isEnabled = (card: CardDef) =>
+    (customConfig[card.configKey] as string[]).includes(card.value);
+
   const handleCreateGame = () => {
     if (!playerName) return;
-    createGame(playerName, selectedMode);
+    createGame(
+      playerName,
+      selectedMode,
+      selectedMode === "custom" ? customConfig : undefined
+    );
     setView("game");
   };
 
-  const handleRestartGame = () => {
-    setView("join");
-  };
+  const handleRestartGame = () => setView("join");
 
   const handleJoinGame = () => {
     if (!playerName || !gameId) return;
@@ -71,7 +137,6 @@ export function GameLobby() {
             boxShadow: "0 0 30px rgba(168,85,247,0.15), inset 0 0 30px rgba(168,85,247,0.03)",
           }}
         >
-          {/* Spinner + heading */}
           <div className="flex flex-col items-center gap-3 text-center">
             <div className="w-10 h-10 rounded-full border-4 border-purple-500/30 border-t-purple-400 animate-spin" />
             <p className="text-purple-300 font-bold text-base tracking-wide">
@@ -83,21 +148,15 @@ export function GameLobby() {
               <span className="text-yellow-400 font-medium">{t.loadingStayOnPage}</span>
             </p>
           </div>
-
-          {/* Divider */}
           <div className="border-t border-white/10" />
-
-          {/* Rules to read while waiting */}
           <p className="text-xs text-purple-400 font-semibold text-center tracking-widest uppercase">
             {t.whileYouWait}
           </p>
-
           <div className="space-y-3 text-xs text-gray-400">
             <div>
               <p className="text-purple-300 font-semibold mb-1">{t.objective}</p>
               <p>{t.objectiveText}</p>
             </div>
-
             <div>
               <p className="text-purple-300 font-semibold mb-1">{t.yourTurn}</p>
               <ul className="space-y-1 list-disc list-inside">
@@ -114,7 +173,6 @@ export function GameLobby() {
                 </li>
               </ul>
             </div>
-
             <div>
               <p className="text-purple-300 font-semibold mb-1">{t.flip7Title}</p>
               <p>
@@ -125,35 +183,6 @@ export function GameLobby() {
                 {t.flip7Text[4]}
               </p>
             </div>
-
-            <div>
-              <p className="text-purple-300 font-semibold mb-1">{t.cardTypes}</p>
-              <ul className="space-y-1">
-                {(t.cardTypeItems as string[][]).map((item, i) => (
-                  <li key={i}>
-                    <span className={i === 0 ? "text-white font-medium" : i === 1 ? "text-green-400 font-medium" : "text-yellow-300 font-medium"}>
-                      {item[0]}
-                    </span>
-                    {item[1]}
-                  </li>
-                ))}
-              </ul>
-            </div>
-
-            <div>
-              <p className="text-purple-300 font-semibold mb-1">{t.specialCards}</p>
-              <ul className="space-y-1">
-                {(t.specialCardItems as string[][]).map((item, i) => (
-                  <li key={i}>
-                    <span className={i === 0 ? "text-cyan-400 font-medium" : i === 1 ? "text-orange-400 font-medium" : "text-pink-400 font-medium"}>
-                      {item[0]}
-                    </span>
-                    {item[1]}
-                  </li>
-                ))}
-              </ul>
-            </div>
-
             <div>
               <p className="text-purple-300 font-semibold mb-1">{t.scoringOrder}</p>
               <ol className="space-y-0.5 list-decimal list-inside">
@@ -168,9 +197,90 @@ export function GameLobby() {
     );
   }
 
+  /* ── Mode button style helper ── */
+  const modeBtn = (
+    mode: GameMode,
+    icon: string,
+    label: string,
+    desc: string,
+    activeColor: { border: string; bg: string; dot: string; shadow: string }
+  ) => (
+    <button
+      onClick={() => setSelectedMode(mode)}
+      className={cn(
+        "relative rounded-xl p-3 text-left transition-all duration-200 w-full",
+        "border-2 focus:outline-none",
+        selectedMode === mode
+          ? `${activeColor.border} ${activeColor.bg} ${activeColor.shadow}`
+          : "border-white/10 bg-white/5 hover:border-white/20 hover:bg-white/10"
+      )}
+    >
+      {selectedMode === mode && (
+        <span className={`absolute top-1.5 right-1.5 w-2 h-2 rounded-full ${activeColor.dot}`} />
+      )}
+      <p className="text-sm font-bold text-white mb-0.5">{icon} {label}</p>
+      <p className="text-xs text-gray-400 leading-snug">{desc}</p>
+    </button>
+  );
+
+  /* ── Card toggle row helper ── */
+  const CardToggleGroup = ({
+    labelKey,
+    cards,
+  }: {
+    labelKey: string;
+    cards: CardDef[];
+  }) => {
+    const allOn = cards.every(isEnabled);
+    const allOff = cards.every((c) => !isEnabled(c));
+    return (
+      <div className="space-y-1.5">
+        <div className="flex items-center justify-between">
+          <p className="text-xs text-gray-400 font-semibold">{(t as Record<string, string>)[labelKey]}</p>
+          <div className="flex gap-1">
+            <button
+              onClick={() => setGroupAll(cards, true)}
+              disabled={allOn}
+              className="text-xs px-1.5 py-0.5 rounded bg-white/10 text-gray-400 hover:bg-white/20 hover:text-white disabled:opacity-30 transition-colors"
+            >
+              {t.customSelectAll}
+            </button>
+            <button
+              onClick={() => setGroupAll(cards, false)}
+              disabled={allOff}
+              className="text-xs px-1.5 py-0.5 rounded bg-white/10 text-gray-400 hover:bg-white/20 hover:text-white disabled:opacity-30 transition-colors"
+            >
+              {t.customSelectNone}
+            </button>
+          </div>
+        </div>
+        <div className="flex flex-wrap gap-1.5">
+          {cards.map((card) => {
+            const on = isEnabled(card);
+            return (
+              <button
+                key={card.value}
+                onClick={() => toggleCard(card)}
+                className={cn(
+                  "flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-semibold transition-all duration-150",
+                  "border focus:outline-none",
+                  on
+                    ? "bg-amber-500/20 border-amber-400/60 text-amber-200 shadow-[0_0_8px_rgba(245,158,11,0.3)]"
+                    : "bg-white/5 border-white/10 text-gray-500 hover:border-white/20 hover:text-gray-300"
+                )}
+              >
+                <span>{card.icon}</span>
+                <span>{card.label}</span>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div className="max-w-sm mx-auto animate-float-in">
-      {/* Neon card container */}
       <div
         className="rounded-2xl p-6 space-y-4"
         style={{
@@ -237,50 +347,50 @@ export function GameLobby() {
           </>
         ) : (
           <>
-            {/* Mode selector */}
+            {/* ── Mode selector ── */}
             <div className="space-y-2">
               <p className="text-xs text-purple-400 font-semibold tracking-widest uppercase text-center">
                 {t.gameMode}
               </p>
               <div className="grid grid-cols-2 gap-2">
-                {/* Classic option */}
-                <button
-                  onClick={() => setSelectedMode("classic")}
-                  className={cn(
-                    "relative rounded-xl p-3 text-left transition-all duration-200",
-                    "border-2 focus:outline-none",
-                    selectedMode === "classic"
-                      ? "border-purple-400 bg-purple-500/20 shadow-[0_0_16px_rgba(168,85,247,0.4)]"
-                      : "border-white/10 bg-white/5 hover:border-purple-500/40 hover:bg-white/10"
-                  )}
-                >
-                  {selectedMode === "classic" && (
-                    <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-purple-400" />
-                  )}
-                  <p className="text-sm font-bold text-white mb-1">🃏 {t.modeClassic}</p>
-                  <p className="text-xs text-gray-400 leading-snug">{t.modeClassicDesc}</p>
-                </button>
-
-                {/* Vengeance option */}
-                <button
-                  onClick={() => setSelectedMode("vengeance")}
-                  className={cn(
-                    "relative rounded-xl p-3 text-left transition-all duration-200",
-                    "border-2 focus:outline-none",
-                    selectedMode === "vengeance"
-                      ? "border-red-400 bg-red-500/20 shadow-[0_0_16px_rgba(239,68,68,0.4)]"
-                      : "border-white/10 bg-white/5 hover:border-red-500/40 hover:bg-white/10"
-                  )}
-                >
-                  {selectedMode === "vengeance" && (
-                    <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-red-400" />
-                  )}
-                  <p className="text-sm font-bold text-white mb-1">⚔️ {t.modeVengeance}</p>
-                  <p className="text-xs text-gray-400 leading-snug">{t.modeVengeanceDesc}</p>
-                </button>
+                {modeBtn("classic", "🃏", t.modeClassic, t.modeClassicDesc, {
+                  border: "border-purple-400", bg: "bg-purple-500/20", dot: "bg-purple-400",
+                  shadow: "shadow-[0_0_16px_rgba(168,85,247,0.4)]",
+                })}
+                {modeBtn("vengeance", "⚔️", t.modeVengeance, t.modeVengeanceDesc, {
+                  border: "border-red-400", bg: "bg-red-500/20", dot: "bg-red-400",
+                  shadow: "shadow-[0_0_16px_rgba(239,68,68,0.4)]",
+                })}
               </div>
+              {modeBtn("custom", "⚙️", t.modeCustom, t.modeCustomDesc, {
+                border: "border-amber-400", bg: "bg-amber-500/15", dot: "bg-amber-400",
+                shadow: "shadow-[0_0_16px_rgba(245,158,11,0.35)]",
+              })}
             </div>
 
+            {/* ── Custom card picker ── */}
+            {selectedMode === "custom" && (
+              <div
+                className="rounded-xl p-3 space-y-3"
+                style={{
+                  background: "rgba(245,158,11,0.05)",
+                  border: "1px solid rgba(245,158,11,0.2)",
+                }}
+              >
+                <p className="text-xs text-amber-400 font-bold tracking-widest uppercase text-center">
+                  {t.customCardsTitle}
+                </p>
+                <CardToggleGroup labelKey="customGroupClassic" cards={CLASSIC_SPECIALS} />
+                <div className="border-t border-white/5" />
+                <CardToggleGroup labelKey="customGroupVengeanceAction" cards={VENGEANCE_ACTION} />
+                <div className="border-t border-white/5" />
+                <CardToggleGroup labelKey="customGroupVengeanceNumber" cards={VENGEANCE_NUMBERS} />
+                <div className="border-t border-white/5" />
+                <CardToggleGroup labelKey="customGroupVengeanceMod" cards={VENGEANCE_MODS} />
+              </div>
+            )}
+
+            {/* ── Create button ── */}
             <Button
               onClick={handleCreateGame}
               disabled={!playerName}
@@ -288,6 +398,8 @@ export function GameLobby() {
                 "w-full h-12 text-base font-bold rounded-xl transition-all duration-200",
                 selectedMode === "vengeance"
                   ? "bg-gradient-to-r from-red-700 to-orange-600 hover:from-red-600 hover:to-orange-500 shadow-[0_0_15px_rgba(239,68,68,0.4)] hover:shadow-[0_0_25px_rgba(239,68,68,0.6)]"
+                  : selectedMode === "custom"
+                  ? "bg-gradient-to-r from-amber-700 to-yellow-600 hover:from-amber-600 hover:to-yellow-500 shadow-[0_0_15px_rgba(245,158,11,0.4)] hover:shadow-[0_0_25px_rgba(245,158,11,0.6)]"
                   : "bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 shadow-[0_0_15px_rgba(168,85,247,0.4)] hover:shadow-[0_0_25px_rgba(168,85,247,0.6)]",
                 "disabled:opacity-40 disabled:cursor-not-allowed"
               )}
@@ -308,7 +420,7 @@ export function GameLobby() {
           </>
         )}
 
-        {/* Game rules hint + expandable how-to-play */}
+        {/* ── Rules hint ── */}
         <div className="pt-2 border-t border-white/10">
           <p className="text-xs text-gray-500 text-center leading-relaxed">
             {t.gameHint}
@@ -322,13 +434,10 @@ export function GameLobby() {
 
           {showRules && (
             <div className="mt-3 space-y-3 text-xs text-gray-400">
-              {/* Objective */}
               <div>
                 <p className="text-purple-300 font-semibold mb-1">{t.objective}</p>
                 <p>{t.objectiveText}</p>
               </div>
-
-              {/* Turn structure */}
               <div>
                 <p className="text-purple-300 font-semibold mb-1">{t.yourTurn}</p>
                 <ul className="space-y-1 list-disc list-inside">
@@ -345,8 +454,6 @@ export function GameLobby() {
                   </li>
                 </ul>
               </div>
-
-              {/* FLIP 7 */}
               <div>
                 <p className="text-purple-300 font-semibold mb-1">{t.flip7Title}</p>
                 <p>
@@ -357,8 +464,6 @@ export function GameLobby() {
                   {t.flip7Text[4]}
                 </p>
               </div>
-
-              {/* Card types */}
               <div>
                 <p className="text-purple-300 font-semibold mb-1">{t.cardTypes}</p>
                 <ul className="space-y-1">
@@ -372,23 +477,20 @@ export function GameLobby() {
                   ))}
                 </ul>
               </div>
-
-              {/* Special cards */}
               <div>
                 <p className="text-purple-300 font-semibold mb-1">{t.specialCards}</p>
                 <ul className="space-y-1">
-                  {(t.specialCardItems as string[][]).map((item, i) => (
-                    <li key={i}>
-                      <span className={i === 0 ? "text-cyan-400 font-medium" : i === 1 ? "text-orange-400 font-medium" : "text-pink-400 font-medium"}>
-                        {item[0]}
-                      </span>
-                      {item[1]}
-                    </li>
-                  ))}
+                  {(t.specialCardItems as string[][]).map((item, i) => {
+                    const colors = ["text-cyan-400","text-orange-400","text-pink-400","text-red-400","text-emerald-400","text-violet-400","text-slate-400","text-teal-400"];
+                    return (
+                      <li key={i}>
+                        <span className={`${colors[i] ?? "text-purple-300"} font-medium`}>{item[0]}</span>
+                        {item[1]}
+                      </li>
+                    );
+                  })}
                 </ul>
               </div>
-
-              {/* Scoring */}
               <div>
                 <p className="text-purple-300 font-semibold mb-1">{t.scoringOrder}</p>
                 <ol className="space-y-0.5 list-decimal list-inside">

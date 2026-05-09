@@ -2,7 +2,7 @@ import dotenv from "dotenv";
 dotenv.config();
 import { Server } from "socket.io";
 import { createServer } from "http";
-import { GameState, Card, Player } from "@/lib/types";
+import { GameState, Card, Player, GameCustomConfig } from "@/lib/types";
 import {
   generateDeck,
   handleDrawNumberCard,
@@ -45,7 +45,11 @@ function checkGameOver(io: Server, gameId: string, game: GameState) {
 io.on("connection", (socket) => {
   console.log("Client connected:", socket.id);
 
-  socket.on("createGame", ({ playerName, mode }: { playerName: string; mode: "classic" | "vengeance" }) => {
+  socket.on("createGame", ({ playerName, mode, customConfig }: {
+    playerName: string;
+    mode: "classic" | "vengeance" | "custom";
+    customConfig?: GameCustomConfig;
+  }) => {
     const gameId = Math.random().toString(36).substring(2, 8);
     const player: Player = {
       id: socket.id,
@@ -57,12 +61,14 @@ io.on("connection", (socket) => {
       score: 0,
     };
 
+    const resolvedMode = mode ?? "classic";
     const gameState: GameState = {
       id: gameId,
-      mode: mode ?? "classic",
+      mode: resolvedMode,
+      customConfig: resolvedMode === "custom" ? customConfig : undefined,
       players: [player],
       currentPlayer: 0,
-      deck: generateDeck(mode ?? "classic"),
+      deck: generateDeck(resolvedMode, customConfig),
       discardPile: [],
       direction: 1,
       status: "waiting",
