@@ -8,6 +8,12 @@ export const soundMappings = {
   useSecondChance: "/sounds/cure.mp3",
   useFreeze: "/sounds/freeze.wav",
   useFlip3: "/sounds/flip3.mp3",
+  useFlip4: "/sounds/flip3.mp3",
+  useJustOneMore: "/sounds/special.mp3",
+  useSteal: "/sounds/special.mp3",
+  useDiscard: "/sounds/duplicates.mp3",
+  useSwap: "/sounds/special.mp3",
+  unlucky7: "/sounds/duplicates.mp3",
   win: "/sounds/win.mp3",
 };
 

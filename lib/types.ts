@@ -11,7 +11,8 @@ export type PlayerHandStatus =
   | "duplicates"
   | "useSecondChance"
   | "stop"
-  | "flip7";
+  | "flip7"
+  | "unlucky7";
 
 export interface Player {
   id: string;
@@ -21,13 +22,15 @@ export interface Player {
   status: PlayerStatus;
   secondChance: boolean;
   score: number;
+  pendingJustOneMore?: boolean;
 }
 
 export interface LastEvent {
-  type: "freeze" | "flip-three" | "second-chance" | "bust" | "flip7" | "stop";
+  type: "freeze" | "flip-three" | "second-chance" | "bust" | "flip7" | "stop" | "flip-four" | "just-one-more" | "steal" | "discard" | "swap" | "unlucky-seven";
   targetName?: string;
   sourceName?: string;
   pointsAdded?: number;
+  stolenCard?: string;
 }
 
 export interface GameState {

@@ -67,6 +67,10 @@ export const translations = {
         "x2",
         " — doubles your number-card subtotal before additive modifiers are applied.",
       ],
+      [
+        "÷2",
+        " — halves your number-card subtotal (after x2, before +X modifiers). Minimum 0.",
+      ],
     ],
     specialCards: "Special Cards",
     specialCardItems: [
@@ -82,11 +86,43 @@ export const translations = {
         "💖 Second Chance",
         " — give a player a safety net: if they would bust on their next duplicate, the duplicate and this card are discarded instead of losing everything.",
       ],
+      [
+        "🃏 Flip Four",
+        " — force a target player to draw 4 additional cards right now. More brutal than Flip Three!",
+      ],
+      [
+        "➕ Just One More",
+        " — force a target player to draw exactly 1 more card, then they must stop immediately.",
+      ],
+      [
+        "🫴 Steal",
+        " — take any card from another player's hand and add it to your own.",
+      ],
+      [
+        "🗑️ Discard",
+        " — choose any card from another player's hand and discard it.",
+      ],
+      [
+        "🔄 Swap",
+        " — exchange one of your cards with one card from another player's hand.",
+      ],
+    ],
+    vengeanceCards: "Vengeance Number Cards",
+    vengeanceCardItems: [
+      [
+        "🍀 Lucky 13",
+        " — counts as 13 but is immune to one duplicate: having both Lucky 13 and a regular 13 is allowed. Only a third 13-family card causes a bust.",
+      ],
+      [
+        "💀 Unlucky 7",
+        " — when drawn, ALL your current number cards are immediately discarded. Then this card stays in your hand.",
+      ],
     ],
     scoringOrder: "Scoring Order",
     scoringItems: [
       "Sum all number cards.",
       "Apply x2 if held (doubles the number total).",
+      "Apply ÷2 if held (halves the number total).",
       "Add all +X modifier cards.",
       "Add +15 if FLIP 7 was achieved.",
     ],
@@ -114,6 +150,11 @@ export const translations = {
     discardCard: "Discard Card",
     cancel: "Cancel",
     pts: "pts",
+    selectCardToTake: "Select a card to take from",
+    selectCardToDiscard: "Select a card to discard from",
+    selectVictimCard: "Select their card to swap",
+    selectYourCard: "Now select one of your cards to give",
+    noCardsAvailable: "This player has no cards to target.",
 
     // invite copied modal
     inviteCopiedTitle: "Link Copied!",
@@ -132,6 +173,12 @@ export const translations = {
     eventBust: (target: string) => `${target} BUSTED!`,
     eventFlip7: (target: string) => `${target} got FLIP 7! +15 bonus!`,
     eventStop: (target: string) => `${target} stopped drawing!`,
+    eventFlipFour: (target: string) => `${target} must draw 4 cards!`,
+    eventJustOneMore: (target: string) => `${target} draws one more, then stops!`,
+    eventSteal: (source: string, target: string, card: string) => `${source} stole ${card} from ${target}!`,
+    eventDiscard: (source: string, target: string, card: string) => `${source} discarded ${card} from ${target}!`,
+    eventSwap: (source: string, target: string) => `${source} swapped cards with ${target}!`,
+    eventUnluckySeven: (target: string) => `${target} drew Unlucky 7 — all numbers discarded!`,
   },
 
   es: {
@@ -200,6 +247,10 @@ export const translations = {
         "x2",
         " — duplica el subtotal de cartas numéricas antes de aplicar los modificadores.",
       ],
+      [
+        "÷2",
+        " — divide el subtotal de cartas numéricas por 2 (después del x2, antes de los +X). Mínimo 0.",
+      ],
     ],
     specialCards: "Cartas Especiales",
     specialCardItems: [
@@ -215,11 +266,43 @@ export const translations = {
         "💖 Second Chance",
         " — dale a un jugador una red de seguridad: si sacan un duplicado, descartan la carta en vez de perder todo.",
       ],
+      [
+        "🃏 Flip Four",
+        " — forzá a un jugador a robar 4 cartas adicionales ahora mismo. ¡Más brutal que Flip Three!",
+      ],
+      [
+        "➕ Just One More",
+        " — forzá a un jugador a robar exactamente 1 carta más, y luego debe parar inmediatamente.",
+      ],
+      [
+        "🫴 Steal",
+        " — robá cualquier carta de la mano de otro jugador y añadila a la tuya.",
+      ],
+      [
+        "🗑️ Discard",
+        " — elegí cualquier carta de la mano de otro jugador y descartala.",
+      ],
+      [
+        "🔄 Swap",
+        " — intercambiá una de tus cartas con una carta de la mano de otro jugador.",
+      ],
+    ],
+    vengeanceCards: "Cartas Numéricas Especiales",
+    vengeanceCardItems: [
+      [
+        "🍀 Lucky 13",
+        " — cuenta como 13 pero es inmune a un duplicado: tener Lucky 13 y un 13 normal está permitido. Solo una tercera carta de la familia 13 provoca bust.",
+      ],
+      [
+        "💀 Unlucky 7",
+        " — cuando la robás, TODAS tus cartas numéricas actuales se descartan inmediatamente. Esta carta queda en tu mano.",
+      ],
     ],
     scoringOrder: "Orden de Puntuación",
     scoringItems: [
       "Sumá todas las cartas numéricas.",
       "Aplicá x2 si la tenés (duplica el total numérico).",
+      "Aplicá ÷2 si la tenés (divide el total numérico).",
       "Sumá todos los modificadores +X.",
       "Añadí +15 si lograste FLIP 7.",
     ],
@@ -247,6 +330,11 @@ export const translations = {
     discardCard: "Descartar Carta",
     cancel: "Cancelar",
     pts: "pts",
+    selectCardToTake: "Elegí una carta para robar de",
+    selectCardToDiscard: "Elegí una carta para descartar de",
+    selectVictimCard: "Elegí la carta del rival para intercambiar",
+    selectYourCard: "Ahora elegí una de tus cartas para dar",
+    noCardsAvailable: "Este jugador no tiene cartas para seleccionar.",
 
     // invite copied modal
     inviteCopiedTitle: "¡Link copiado!",
@@ -266,6 +354,12 @@ export const translations = {
     eventBust: (target: string) => `¡${target} se PASÓ!`,
     eventFlip7: (target: string) => `¡${target} hizo FLIP 7! ¡+15 bonus!`,
     eventStop: (target: string) => `¡${target} paró de robar!`,
+    eventFlipFour: (target: string) => `¡${target} debe robar 4 cartas!`,
+    eventJustOneMore: (target: string) => `¡${target} roba una más y para!`,
+    eventSteal: (source: string, target: string, card: string) => `¡${source} robó ${card} de ${target}!`,
+    eventDiscard: (source: string, target: string, card: string) => `¡${source} descartó ${card} de ${target}!`,
+    eventSwap: (source: string, target: string) => `¡${source} intercambió cartas con ${target}!`,
+    eventUnluckySeven: (target: string) => `¡${target} sacó el Unlucky 7 — todos los números descartados!`,
   },
 };
 

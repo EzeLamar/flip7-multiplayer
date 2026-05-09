@@ -47,6 +47,41 @@ export function PlayingCard({
           icon: "💖",
         };
       }
+      if (value === "flip four") {
+        return {
+          bg: "bg-gradient-to-br from-red-400 via-orange-500 to-red-800",
+          glow: "shadow-[0_0_12px_rgba(239,68,68,0.6)]",
+          icon: "🃏",
+        };
+      }
+      if (value === "just one more") {
+        return {
+          bg: "bg-gradient-to-br from-emerald-400 via-green-500 to-green-800",
+          glow: "shadow-[0_0_12px_rgba(16,185,129,0.6)]",
+          icon: "➕",
+        };
+      }
+      if (value === "steal") {
+        return {
+          bg: "bg-gradient-to-br from-violet-500 via-purple-600 to-purple-900",
+          glow: "shadow-[0_0_12px_rgba(139,92,246,0.6)]",
+          icon: "🫴",
+        };
+      }
+      if (value === "discard") {
+        return {
+          bg: "bg-gradient-to-br from-slate-400 via-gray-600 to-red-900",
+          glow: "shadow-[0_0_12px_rgba(100,116,139,0.6)]",
+          icon: "🗑️",
+        };
+      }
+      if (value === "swap") {
+        return {
+          bg: "bg-gradient-to-br from-teal-400 via-cyan-500 to-indigo-700",
+          glow: "shadow-[0_0_12px_rgba(20,184,166,0.6)]",
+          icon: "🔄",
+        };
+      }
     }
 
     if (card.type === "modifier") {
@@ -74,6 +109,13 @@ export function PlayingCard({
       "0":  { bg: "bg-gradient-to-br from-rose-400 to-rose-700", glow: "shadow-[0_0_10px_rgba(244,63,94,0.6)]", icon: "" },
     };
 
+    if (value === "lucky 13") {
+      return { bg: "bg-gradient-to-br from-yellow-300 via-amber-400 to-yellow-600", glow: "shadow-[0_0_12px_rgba(234,179,8,0.8)]", icon: "🍀" };
+    }
+    if (value === "unlucky 7") {
+      return { bg: "bg-gradient-to-br from-gray-900 via-red-900 to-black", glow: "shadow-[0_0_12px_rgba(127,29,29,0.8)]", icon: "💀" };
+    }
+
     return numberStyles[value] ?? { bg: "bg-gradient-to-br from-gray-600 to-gray-800", glow: "", icon: "" };
   };
 
@@ -81,6 +123,13 @@ export function PlayingCard({
     if (value === "second chance") return "SC";
     if (value === "freeze") return "FR";
     if (value === "flip three") return "F3";
+    if (value === "flip four") return "F4";
+    if (value === "just one more") return "JOM";
+    if (value === "steal") return "STL";
+    if (value === "discard") return "DSC";
+    if (value === "swap") return "SWP";
+    if (value === "lucky 13") return "L13";
+    if (value === "unlucky 7") return "U7";
     return value;
   };
 

@@ -21,6 +21,7 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { PlayerInfo } from "@/components/ui/gamerInfo";
+import { PlayingCard } from "@/components/playing-card";
 import { cn } from "@/lib/utils";
 import { soundMappings, SoundKey } from "@/utils/soundMappings";
 import { BookOpen, Copy, Users, Volume1, Volume2, VolumeX } from "lucide-react";
@@ -85,9 +86,53 @@ export function GameBoard({
       border: "border-teal-400/60",
       glow: "shadow-[0_0_30px_rgba(20,184,166,0.4)]",
     },
+    "flip-four": {
+      emoji: "🃏",
+      label: (e) => t.eventFlipFour(e.targetName!),
+      bg: "bg-red-900/80",
+      border: "border-red-400/60",
+      glow: "shadow-[0_0_40px_rgba(239,68,68,0.5)]",
+    },
+    "just-one-more": {
+      emoji: "➕",
+      label: (e) => t.eventJustOneMore(e.targetName!),
+      bg: "bg-green-900/80",
+      border: "border-emerald-400/60",
+      glow: "shadow-[0_0_40px_rgba(16,185,129,0.5)]",
+    },
+    steal: {
+      emoji: "🫴",
+      label: (e) => t.eventSteal(e.sourceName!, e.targetName!, e.stolenCard ?? ""),
+      bg: "bg-violet-900/80",
+      border: "border-violet-400/60",
+      glow: "shadow-[0_0_40px_rgba(139,92,246,0.5)]",
+    },
+    discard: {
+      emoji: "🗑️",
+      label: (e) => t.eventDiscard(e.sourceName!, e.targetName!, e.stolenCard ?? ""),
+      bg: "bg-slate-900/80",
+      border: "border-slate-400/60",
+      glow: "shadow-[0_0_40px_rgba(100,116,139,0.5)]",
+    },
+    swap: {
+      emoji: "🔄",
+      label: (e) => t.eventSwap(e.sourceName!, e.targetName!),
+      bg: "bg-teal-900/80",
+      border: "border-teal-400/60",
+      glow: "shadow-[0_0_40px_rgba(20,184,166,0.5)]",
+    },
+    "unlucky-seven": {
+      emoji: "💀",
+      label: (e) => t.eventUnluckySeven(e.targetName!),
+      bg: "bg-red-950/80",
+      border: "border-red-900/60",
+      glow: "shadow-[0_0_40px_rgba(127,29,29,0.6)]",
+    },
   };
 
   const [selectedCard, setSelectedCard] = useState<Card | null>(null);
+  const [selectedVictim, setSelectedVictim] = useState<Player | null>(null);
+  const [selectedVictimCard, setSelectedVictimCard] = useState<Card | null>(null);
   const [showRules, setShowRules] = useState(false);
   const [showCopiedModal, setShowCopiedModal] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -188,6 +233,9 @@ export function GameBoard({
         if (response.status === "special") {
           playSound("special");
         }
+        if (response.status === "unlucky7") {
+          playSound("unlucky7");
+        }
       }
     );
   };
@@ -228,26 +276,36 @@ export function GameBoard({
     }
   };
 
-  const selectSpecialCardVictim = (player: Player, playedCard: Card) => {
+  const emitPlayCard = (player: Player, playedCard: Card, targetCard?: Card, sourceCard?: Card) => {
     socket.emit("playCard", {
       gameId: gameState.id,
       victimId: player.id,
       playedCard,
+      targetCard,
+      sourceCard,
     });
     switch (playedCard.value) {
-      case "freeze":
-        playSound("useFreeze");
-        break;
-      case "flip three":
-        playSound("useFlip3");
-        break;
-      case "second chance":
-        playSound("getSecondChance");
-        break;
-      default:
-        break;
+      case "freeze": playSound("useFreeze"); break;
+      case "flip three": playSound("useFlip3"); break;
+      case "second chance": playSound("getSecondChance"); break;
+      case "flip four": playSound("useFlip4"); break;
+      case "just one more": playSound("useJustOneMore"); break;
+      case "steal": playSound("useSteal"); break;
+      case "discard": playSound("useDiscard"); break;
+      case "swap": playSound("useSwap"); break;
     }
     setSelectedCard(null);
+    setSelectedVictim(null);
+    setSelectedVictimCard(null);
+  };
+
+  const selectSpecialCardVictim = (player: Player, playedCard: Card) => {
+    const needsCardSelection = ["steal", "discard", "swap"].includes(playedCard.value);
+    if (needsCardSelection) {
+      setSelectedVictim(player);
+      return;
+    }
+    emitPlayCard(player, playedCard);
   };
 
   const blockStopButton = () => {
@@ -283,6 +341,10 @@ export function GameBoard({
       if (gameState.players.every((p) => p.secondChance)) {
         return false;
       }
+      return true;
+    }
+
+    if (["steal", "discard", "swap"].includes(card.value) && player.cards.length === 0) {
       return true;
     }
   };
@@ -336,6 +398,12 @@ export function GameBoard({
             broadcastEvent.type === "freeze" ? "bg-blue-900" :
             broadcastEvent.type === "flip-three" ? "bg-orange-900" :
             broadcastEvent.type === "second-chance" ? "bg-pink-900" :
+            broadcastEvent.type === "flip-four" ? "bg-red-800" :
+            broadcastEvent.type === "just-one-more" ? "bg-green-900" :
+            broadcastEvent.type === "steal" ? "bg-violet-900" :
+            broadcastEvent.type === "discard" ? "bg-slate-800" :
+            broadcastEvent.type === "swap" ? "bg-teal-900" :
+            broadcastEvent.type === "unlucky-seven" ? "bg-red-950" :
             "bg-gray-900"
           )} />
           {/* Event card */}
@@ -596,9 +664,31 @@ export function GameBoard({
                 <div>
                   <p className="text-purple-300 font-semibold mb-1">{t.specialCards}</p>
                   <ul className="space-y-1">
-                    {(t.specialCardItems as string[][]).map((item, i) => (
+                    {(t.specialCardItems as string[][]).map((item, i) => {
+                      const colors = [
+                        "text-cyan-400", "text-orange-400", "text-pink-400",
+                        "text-red-400", "text-emerald-400", "text-violet-400",
+                        "text-slate-400", "text-teal-400",
+                      ];
+                      return (
+                        <li key={i}>
+                          <span className={`${colors[i] ?? "text-purple-300"} font-medium`}>
+                            {item[0]}
+                          </span>
+                          {item[1]}
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </div>
+
+                {/* Vengeance cards */}
+                <div>
+                  <p className="text-amber-400 font-semibold mb-1">{t.vengeanceCards}</p>
+                  <ul className="space-y-1">
+                    {(t.vengeanceCardItems as string[][]).map((item, i) => (
                       <li key={i}>
-                        <span className={i === 0 ? "text-cyan-400 font-medium" : i === 1 ? "text-orange-400 font-medium" : "text-pink-400 font-medium"}>
+                        <span className={i === 0 ? "text-yellow-300 font-medium" : "text-red-400 font-medium"}>
                           {item[0]}
                         </span>
                         {item[1]}
@@ -629,6 +719,92 @@ export function GameBoard({
             activePlayers.length > 0 &&
             activePlayers.every((p) => p.secondChance);
 
+          const cardIcon: Record<string, string> = {
+            freeze: "❄️", "flip three": "🎴", "second chance": "💖",
+            "flip four": "🃏", "just one more": "➕", steal: "🫴", discard: "🗑️", swap: "🔄",
+          };
+
+          const closeModal = () => {
+            setSelectedCard(null);
+            setSelectedVictim(null);
+            setSelectedVictimCard(null);
+          };
+
+          // Step 3 (Swap only): pick your own card to give up
+          if (selectedCard.value === "swap" && selectedVictim && selectedVictimCard) {
+            const ownCards = currentPlayer?.cards.filter((c) => c.value !== selectedCard.value) ?? [];
+            return (
+              <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-40">
+                <div className="rounded-2xl p-6 max-w-sm w-full mx-4 animate-float-in"
+                  style={{ background: "rgba(17,17,34,0.95)", border: "1px solid rgba(20,184,166,0.5)", boxShadow: "0 0 40px rgba(20,184,166,0.3)" }}>
+                  <div className="text-center mb-4">
+                    <div className="text-3xl mb-1">🔄</div>
+                    <h3 className="text-lg font-bold text-white">{t.selectYourCard}</h3>
+                    <p className="text-xs text-gray-400 mt-1">giving to {selectedVictim.name}</p>
+                  </div>
+                  {ownCards.length === 0 ? (
+                    <p className="text-center text-sm text-gray-400">{t.noCardsAvailable}</p>
+                  ) : (
+                    <div className="flex flex-wrap justify-center gap-2 mt-2">
+                      {ownCards.map((c, i) => (
+                        <PlayingCard
+                          key={i}
+                          card={c}
+                          className="w-12 h-20"
+                          onClick={() => emitPlayCard(selectedVictim, selectedCard, selectedVictimCard, c)}
+                        />
+                      ))}
+                    </div>
+                  )}
+                  <button onClick={closeModal} className="mt-4 w-full text-sm text-gray-500 hover:text-gray-300 transition-colors">{t.cancel}</button>
+                </div>
+              </div>
+            );
+          }
+
+          // Step 2 (Steal/Discard/Swap): pick a card from victim's hand
+          if (selectedVictim && ["steal", "discard", "swap"].includes(selectedCard.value)) {
+            const victimCards = selectedVictim.cards;
+            const label = selectedCard.value === "steal"
+              ? t.selectCardToTake
+              : selectedCard.value === "discard"
+              ? t.selectCardToDiscard
+              : t.selectVictimCard;
+            return (
+              <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-40">
+                <div className="rounded-2xl p-6 max-w-sm w-full mx-4 animate-float-in"
+                  style={{ background: "rgba(17,17,34,0.95)", border: "1px solid rgba(168,85,247,0.5)", boxShadow: "0 0 40px rgba(168,85,247,0.3)" }}>
+                  <div className="text-center mb-4">
+                    <div className="text-3xl mb-1">{cardIcon[selectedCard.value]}</div>
+                    <h3 className="text-lg font-bold text-white">{label} <span className="text-purple-300">{selectedVictim.name}</span></h3>
+                  </div>
+                  {victimCards.length === 0 ? (
+                    <p className="text-center text-sm text-gray-400">{t.noCardsAvailable}</p>
+                  ) : (
+                    <div className="flex flex-wrap justify-center gap-2 mt-2">
+                      {victimCards.map((c, i) => (
+                        <PlayingCard
+                          key={i}
+                          card={c}
+                          className="w-12 h-20"
+                          onClick={() => {
+                            if (selectedCard.value === "swap") {
+                              setSelectedVictimCard(c);
+                            } else {
+                              emitPlayCard(selectedVictim, selectedCard, c);
+                            }
+                          }}
+                        />
+                      ))}
+                    </div>
+                  )}
+                  <button onClick={closeModal} className="mt-4 w-full text-sm text-gray-500 hover:text-gray-300 transition-colors">{t.cancel}</button>
+                </div>
+              </div>
+            );
+          }
+
+          // Step 1: select victim player
           return (
             <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-40">
               <div
@@ -640,10 +816,7 @@ export function GameBoard({
                 }}
               >
                 <div className="text-center mb-5">
-                  <div className="text-3xl mb-2">
-                    {selectedCard.value === "freeze" ? "❄️" :
-                     selectedCard.value === "flip three" ? "🎴" : "💖"}
-                  </div>
+                  <div className="text-3xl mb-2">{cardIcon[selectedCard.value] ?? "🃏"}</div>
                   <h3 className="text-lg font-bold text-white">
                     {allActiveHaveSecondChance ? (
                       <span className="text-pink-300">{t.secondChanceTitle}</span>
@@ -696,7 +869,7 @@ export function GameBoard({
                 )}
 
                 <button
-                  onClick={() => setSelectedCard(null)}
+                  onClick={closeModal}
                   className="mt-4 w-full text-sm text-gray-500 hover:text-gray-300 transition-colors"
                 >
                   {t.cancel}
