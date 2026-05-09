@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { io, Socket } from "socket.io-client";
-import { GameState } from "@/lib/types";
+import { GameState, GameCustomConfig } from "@/lib/types";
 import { toast } from "sonner";
 
 export function useSocket() {
@@ -50,9 +50,13 @@ export function useSocket() {
     };
   }, []);
 
-  const createGame = (playerName: string, mode: "classic" | "vengeance" = "classic") => {
+  const createGame = (
+    playerName: string,
+    mode: "classic" | "vengeance" | "custom" = "classic",
+    customConfig?: GameCustomConfig
+  ) => {
     setIsCreatingRoom(true);
-    socket?.emit("createGame", { playerName, mode });
+    socket?.emit("createGame", { playerName, mode, customConfig });
   };
 
   const joinGame = (gameId: string, playerName: string) => {

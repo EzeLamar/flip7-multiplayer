@@ -447,6 +447,10 @@ export function GameBoard({
                 <span className="text-xs font-black tracking-widest px-2 py-0.5 rounded-full bg-red-900/60 border border-red-500/50 text-red-300">
                   ⚔️ {t.modeVengeanceBadge}
                 </span>
+              ) : gameState.mode === "custom" ? (
+                <span className="text-xs font-black tracking-widest px-2 py-0.5 rounded-full bg-amber-900/60 border border-amber-500/50 text-amber-300">
+                  ⚙️ {t.modeCustomBadge}
+                </span>
               ) : (
                 <span className="text-xs font-black tracking-widest px-2 py-0.5 rounded-full bg-purple-900/40 border border-purple-500/30 text-purple-400">
                   🃏 {t.modeClassicBadge}

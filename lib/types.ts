@@ -33,9 +33,16 @@ export interface LastEvent {
   stolenCard?: string;
 }
 
+export interface GameCustomConfig {
+  enabledSpecials: string[];
+  enabledSpecialNumbers: string[];
+  enabledVengeanceModifiers: string[];
+}
+
 export interface GameState {
   id: string;
-  mode: "classic" | "vengeance";
+  mode: "classic" | "vengeance" | "custom";
+  customConfig?: GameCustomConfig;
   round: number;
   players: Player[];
   currentPlayer: number;
