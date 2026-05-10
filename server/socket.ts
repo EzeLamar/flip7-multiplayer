@@ -11,6 +11,7 @@ import {
   handleScoreCards,
   getNextPlayerIndex,
   reshuffleDeck,
+  SpecialCardCheckResult,
 } from "./game-logic";
 
 const NEXT_URL = process.env.NEXT_PUBLIC_SOCKET_URL || "http://localhost:3000";
@@ -146,7 +147,7 @@ io.on("connection", (socket) => {
 
     currentPlayer.cards.pop();
 
-    handlePlaySpecialCard(game, victimId, playedCard, targetCard, sourceCard);
+    const specialResult: SpecialCardCheckResult = handlePlaySpecialCard(game, victimId, playedCard, targetCard, sourceCard);
     currentPlayer.lastDrawnCard = null;
 
     if (playedCard.value === "freeze") {
@@ -160,11 +161,31 @@ io.on("connection", (socket) => {
     } else if (playedCard.value === "just one more") {
       game.lastEvent = { type: "just-one-more", targetName: victim?.name, sourceName: currentPlayer.name };
     } else if (playedCard.value === "steal") {
-      game.lastEvent = { type: "steal", targetName: victim?.name, sourceName: currentPlayer.name, stolenCard: targetCard?.value };
+      if (specialResult.stealCheck === "flip7") {
+        game.lastEvent = { type: "flip7", targetName: currentPlayer.name, sourceName: currentPlayer.name };
+      } else if (specialResult.stealCheck === "duplicates") {
+        game.lastEvent = { type: "bust", targetName: currentPlayer.name };
+      } else {
+        game.lastEvent = { type: "steal", targetName: victim?.name, sourceName: currentPlayer.name, stolenCard: targetCard?.value };
+      }
     } else if (playedCard.value === "discard") {
       game.lastEvent = { type: "discard", targetName: victim?.name, sourceName: currentPlayer.name, stolenCard: targetCard?.value };
     } else if (playedCard.value === "swap") {
-      game.lastEvent = { type: "swap", targetName: victim?.name, sourceName: currentPlayer.name };
+      const swapFlip7Player =
+        specialResult.swapCurrentPlayerCheck === "flip7" ? currentPlayer
+        : specialResult.swapVictimCheck === "flip7" ? victim
+        : null;
+      const swapBustPlayer =
+        specialResult.swapCurrentPlayerCheck === "duplicates" ? currentPlayer
+        : specialResult.swapVictimCheck === "duplicates" ? victim
+        : null;
+      if (swapFlip7Player) {
+        game.lastEvent = { type: "flip7", targetName: swapFlip7Player.name, sourceName: currentPlayer.name };
+      } else if (swapBustPlayer) {
+        game.lastEvent = { type: "bust", targetName: swapBustPlayer.name };
+      } else {
+        game.lastEvent = { type: "swap", targetName: victim?.name, sourceName: currentPlayer.name };
+      }
     }
 
     io.to(gameId).emit("gameStateUpdated", { gameState: game });
