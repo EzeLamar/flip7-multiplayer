@@ -463,6 +463,19 @@ export function reshuffleDeck(game: GameState) {
   }
 
   const topCard = game.discardPile.pop()!;
+
+  // Remove any existing copies of cards we're about to re-add to avoid duplication.
+  // Cards from completed rounds may already be in the discard pile.
+  const specialSet = new Set(specials);
+  const extraModifierSet = new Set(extraModifiers);
+  const specialNumberSet = new Set(specialNumbers);
+  game.discardPile = game.discardPile.filter((card) => {
+    if (card.type === "special") return !specialSet.has(card.value);
+    if (card.type === "modifier") return !extraModifierSet.has(card.value);
+    if (card.type === "number") return !specialNumberSet.has(card.value);
+    return true;
+  });
+
   specials.forEach((special) => {
     for (let i = 0; i < 3; i++) {
       game.discardPile.push({ value: special, type: "special" });

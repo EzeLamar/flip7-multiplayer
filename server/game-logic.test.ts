@@ -92,6 +92,64 @@ describe("generateDeck", () => {
       expect(deck.filter((c) => c.value === sp && c.type === "special")).toHaveLength(3);
     });
   });
+
+  it("classic mode does NOT include ÷2", () => {
+    const deck = generateDeck("classic");
+    expect(deck.filter((c) => c.value === "÷2")).toHaveLength(0);
+  });
+
+  describe("vengeance mode", () => {
+    it("produces exactly 112 cards", () => {
+      // 79 numbers + 2 special numbers + 7 modifiers + 24 specials = 112
+      const deck = generateDeck("vengeance");
+      expect(deck).toHaveLength(112);
+    });
+
+    it("includes exactly 1 copy of ÷2", () => {
+      const deck = generateDeck("vengeance");
+      expect(deck.filter((c) => c.value === "÷2" && c.type === "modifier")).toHaveLength(1);
+    });
+
+    it("includes lucky 13 and unlucky 7", () => {
+      const deck = generateDeck("vengeance");
+      expect(deck.filter((c) => c.value === "lucky 13")).toHaveLength(1);
+      expect(deck.filter((c) => c.value === "unlucky 7")).toHaveLength(1);
+    });
+
+    it("includes 3 copies each of all 8 vengeance specials", () => {
+      const deck = generateDeck("vengeance");
+      const specials = ["freeze", "flip three", "second chance", "flip four", "just one more", "steal", "discard", "swap"];
+      specials.forEach((sp) => {
+        expect(deck.filter((c) => c.value === sp && c.type === "special"), `expected 3× "${sp}"`).toHaveLength(3);
+      });
+    });
+  });
+
+  describe("custom mode", () => {
+    it("includes ÷2 when selected in enabledVengeanceModifiers", () => {
+      const deck = generateDeck("custom", {
+        enabledSpecials: ["freeze", "flip three", "second chance"],
+        enabledSpecialNumbers: [],
+        enabledVengeanceModifiers: ["÷2"],
+      });
+      expect(deck.filter((c) => c.value === "÷2" && c.type === "modifier")).toHaveLength(1);
+    });
+
+    it("does NOT include ÷2 when not selected", () => {
+      const deck = generateDeck("custom", {
+        enabledSpecials: ["freeze", "flip three", "second chance"],
+        enabledSpecialNumbers: [],
+        enabledVengeanceModifiers: [],
+      });
+      expect(deck.filter((c) => c.value === "÷2")).toHaveLength(0);
+    });
+
+    it("falls back to classic deck when customConfig is missing", () => {
+      const deck = generateDeck("custom");
+      expect(deck).toHaveLength(94);
+      expect(deck.filter((c) => c.value === "÷2")).toHaveLength(0);
+    });
+  });
 });
 
 // ─── handleScoreCards ────────────────────────────────────────────────────────
@@ -443,7 +501,105 @@ describe("reshuffleDeck", () => {
 
     expect(game.discardPile).toHaveLength(1);
     expect(game.discardPile[0]).toEqual(topCard);
-    // deck should now have the previous discard pile cards + 9 special cards added
     expect(game.deck.length).toBeGreaterThan(0);
+  });
+
+  it("vengeance: reshuffled deck has exactly 1 copy of ÷2 even when ÷2 was already in discard pile", () => {
+    const topCard = numCard("9");
+    const game = makeGame({
+      mode: "vengeance",
+      deck: [],
+      discardPile: [
+        numCard("3"),
+        numCard("5"),
+        { value: "÷2", type: "modifier" }, // ÷2 already in discard pile
+        topCard,
+      ],
+    });
+
+    reshuffleDeck(game);
+
+    const div2Cards = game.deck.filter((c) => c.value === "÷2");
+    expect(div2Cards).toHaveLength(1);
+  });
+
+  it("vengeance: reshuffled deck has exactly 1 copy of ÷2 when ÷2 is in player hand (not in discard)", () => {
+    const topCard = numCard("9");
+    const game = makeGame({
+      mode: "vengeance",
+      deck: [],
+      discardPile: [numCard("3"), numCard("5"), topCard],
+      // ÷2 is not in discard pile (assume it's in a player's hand)
+    });
+
+    reshuffleDeck(game);
+
+    const div2Cards = game.deck.filter((c) => c.value === "÷2");
+    expect(div2Cards).toHaveLength(1);
+  });
+
+  it("vengeance: reshuffled deck has exactly 3 copies of each special card", () => {
+    const topCard = numCard("9");
+    const specials = ["freeze", "flip three", "second chance", "flip four", "just one more", "steal", "discard", "swap"];
+    const game = makeGame({
+      mode: "vengeance",
+      deck: [],
+      discardPile: [
+        // Add some specials that were already played/discarded
+        specialCard("freeze"),
+        specialCard("freeze"),
+        specialCard("flip three"),
+        numCard("3"),
+        topCard,
+      ],
+    });
+
+    reshuffleDeck(game);
+
+    specials.forEach((sp) => {
+      const count = game.deck.filter((c) => c.value === sp && c.type === "special").length;
+      expect(count, `expected 3× "${sp}" after reshuffle`).toBe(3);
+    });
+  });
+
+  it("custom: reshuffled deck has exactly 1 copy of ÷2 when selected, even if already in discard", () => {
+    const topCard = numCard("9");
+    const game = makeGame({
+      mode: "custom",
+      customConfig: {
+        enabledSpecials: ["freeze"],
+        enabledSpecialNumbers: [],
+        enabledVengeanceModifiers: ["÷2"],
+      },
+      deck: [],
+      discardPile: [
+        numCard("3"),
+        { value: "÷2", type: "modifier" }, // already in discard
+        topCard,
+      ],
+    });
+
+    reshuffleDeck(game);
+
+    const div2Cards = game.deck.filter((c) => c.value === "÷2");
+    expect(div2Cards).toHaveLength(1);
+  });
+
+  it("custom: reshuffled deck has no ÷2 when not selected", () => {
+    const topCard = numCard("9");
+    const game = makeGame({
+      mode: "custom",
+      customConfig: {
+        enabledSpecials: ["freeze"],
+        enabledSpecialNumbers: [],
+        enabledVengeanceModifiers: [],
+      },
+      deck: [],
+      discardPile: [numCard("3"), numCard("5"), topCard],
+    });
+
+    reshuffleDeck(game);
+
+    expect(game.deck.filter((c) => c.value === "÷2")).toHaveLength(0);
   });
 });
