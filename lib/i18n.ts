@@ -174,6 +174,8 @@ export const translations = {
     selectVictimCard: "Select their card to swap",
     selectYourCard: "Now select one of your cards to give",
     noCardsAvailable: "This player has no cards to target.",
+    noValidSwapTargets: "No valid swap targets. The card will be discarded.",
+    skipCard: "Skip Card",
 
     // invite copied modal
     inviteCopiedTitle: "Link Copied!",
@@ -373,6 +375,8 @@ export const translations = {
     selectVictimCard: "Elegí la carta del rival para intercambiar",
     selectYourCard: "Ahora elegí una de tus cartas para dar",
     noCardsAvailable: "Este jugador no tiene cartas para seleccionar.",
+    noValidSwapTargets: "No hay targets válidos para intercambiar. La carta será descartada.",
+    skipCard: "Saltear Carta",
 
     // invite copied modal
     inviteCopiedTitle: "¡Link copiado!",
