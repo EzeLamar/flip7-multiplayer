@@ -185,17 +185,97 @@ export function handleDrawSpecialCard(_player: Player, _newCard: Card) {
   return;
 }
 
+export interface SpecialCardCheckResult {
+  stealCheck?: "normal" | "duplicates" | "useSecondChance" | "flip7";
+  swapCurrentPlayerCheck?: "normal" | "duplicates" | "useSecondChance" | "flip7";
+  swapVictimCheck?: "normal" | "duplicates" | "useSecondChance" | "flip7";
+}
+
+// Checks a player's hand after receiving a number card (card already in hand).
+function checkPlayerHandAfterCardGain(
+  game: GameState,
+  player: Player,
+  gainedCard: Card
+): "normal" | "duplicates" | "useSecondChance" | "flip7" {
+  if (gainedCard.type !== "number") return "normal";
+
+  const numberCards = player.cards.filter((c) => c.type === "number");
+  const is13Family = gainedCard.value === "13" || gainedCard.value === "lucky 13";
+
+  if (is13Family) {
+    const count = numberCards.filter(
+      (c) => c.value === "13" || c.value === "lucky 13"
+    ).length;
+    if (count >= 3) {
+      if (player.secondChance) {
+        const idx = player.cards.findIndex(
+          (c) => c.value === "13" || c.value === "lucky 13"
+        );
+        player.cards.splice(idx, 1);
+        const scIdx = player.cards.findIndex((c) => c.value === "second chance");
+        player.cards.splice(scIdx, 1);
+        player.secondChance = false;
+        return "useSecondChance";
+      }
+      player.status = "stop";
+      game.flipCount = 1;
+      return "duplicates";
+    }
+  } else {
+    const count = numberCards.filter((c) => c.value === gainedCard.value).length;
+    if (count >= 2) {
+      if (player.secondChance) {
+        const idx = player.cards.findIndex((c) => c.value === gainedCard.value);
+        player.cards.splice(idx, 1);
+        const scIdx = player.cards.findIndex((c) => c.value === "second chance");
+        player.cards.splice(scIdx, 1);
+        player.secondChance = false;
+        return "useSecondChance";
+      }
+      player.status = "stop";
+      game.flipCount = 1;
+      return "duplicates";
+    }
+  }
+
+  // Flip7: 7 unique number cards now in hand (gained card already included)
+  if (numberCards.length >= 7) {
+    player.status = "stop";
+    game.flipCount = 1;
+    player.secondChance = false;
+    player.score += handleScoreCards(player.cards) + 15;
+    return "flip7";
+  }
+
+  return "normal";
+}
+
+// Ends the current round for all players still drawing, applying their scores.
+function endRoundForActivePlayers(game: GameState) {
+  game.players.forEach((p) => {
+    if (p.status === "dealing") {
+      p.score += handleScoreCards(p.cards);
+      p.status = "stop";
+      p.secondChance = false;
+      p.pendingJustOneMore = false;
+    }
+  });
+  if (game.players.some((p) => p.score >= MAX_SCORE)) {
+    game.status = "finished";
+  }
+}
+
 export function handlePlaySpecialCard(
   game: GameState,
   victimId: string,
   playedCard: Card,
   targetCard?: Card,
   sourceCard?: Card
-) {
+): SpecialCardCheckResult {
   const victim = game.players.find((player) => player.id === victimId);
   const currentPlayer = game.players[game.currentPlayer];
   if (!victim) {
-    return;
+    return {};
   }
 
   if (playedCard.value === "freeze") {
@@ -212,7 +292,7 @@ export function handlePlaySpecialCard(
 
     game.currentPlayer = getNextPlayerIndex(game);
 
-    return;
+    return {};
   }
 
   if (playedCard.value === "flip three") {
@@ -221,7 +301,7 @@ export function handlePlaySpecialCard(
       (player) => player.id === victimId
     );
 
-    return;
+    return {};
   }
 
   if (playedCard.value === "second chance") {
@@ -241,20 +321,20 @@ export function handlePlaySpecialCard(
       game.currentPlayer = getNextPlayerIndex(game);
     }
 
-    return;
+    return {};
   }
 
   if (playedCard.value === "flip four") {
     game.flipCount = game.flipCount + 4;
     game.currentPlayer = game.players.findIndex((p) => p.id === victimId);
-    return;
+    return {};
   }
 
   if (playedCard.value === "just one more") {
     game.flipCount = game.flipCount + 1;
     game.currentPlayer = game.players.findIndex((p) => p.id === victimId);
     victim.pendingJustOneMore = true;
-    return;
+    return {};
   }
 
   if (playedCard.value === "steal" && targetCard) {
@@ -264,11 +344,21 @@ export function handlePlaySpecialCard(
     if (cardIndex !== -1) {
       const [stolen] = victim.cards.splice(cardIndex, 1);
       currentPlayer.cards.push(stolen);
+
+      const stealCheck = checkPlayerHandAfterCardGain(game, currentPlayer, stolen);
+      if (stealCheck === "flip7") {
+        endRoundForActivePlayers(game);
+      }
+
+      if (game.flipCount === 1) {
+        game.currentPlayer = getNextPlayerIndex(game);
+      }
+      return { stealCheck };
     }
     if (game.flipCount === 1) {
       game.currentPlayer = getNextPlayerIndex(game);
     }
-    return;
+    return {};
   }
 
   if (playedCard.value === "discard" && targetCard) {
@@ -281,10 +371,13 @@ export function handlePlaySpecialCard(
     if (game.flipCount === 1) {
       game.currentPlayer = getNextPlayerIndex(game);
     }
-    return;
+    return {};
   }
 
   if (playedCard.value === "swap") {
+    let swapCurrentPlayerCheck: SpecialCardCheckResult["swapCurrentPlayerCheck"];
+    let swapVictimCheck: SpecialCardCheckResult["swapVictimCheck"];
+
     if (targetCard && sourceCard) {
       const victimCardIndex = victim.cards.findIndex(
         (c) => c.value === targetCard.value && c.type === targetCard.type
@@ -297,13 +390,24 @@ export function handlePlaySpecialCard(
         const [attackerCard] = currentPlayer.cards.splice(attackerCardIndex, 1);
         victim.cards.push(attackerCard);
         currentPlayer.cards.push(victimCard);
+
+        // Check both players after the swap (card already in hand)
+        swapCurrentPlayerCheck = checkPlayerHandAfterCardGain(game, currentPlayer, victimCard);
+        swapVictimCheck = checkPlayerHandAfterCardGain(game, victim, attackerCard);
+
+        if (swapCurrentPlayerCheck === "flip7" || swapVictimCheck === "flip7") {
+          endRoundForActivePlayers(game);
+        }
       }
     }
+
     if (game.flipCount === 1) {
       game.currentPlayer = getNextPlayerIndex(game);
     }
-    return;
+    return { swapCurrentPlayerCheck, swapVictimCheck };
   }
+
+  return {};
 }
 
 export function getNextPlayerIndex(game: GameState): number {
