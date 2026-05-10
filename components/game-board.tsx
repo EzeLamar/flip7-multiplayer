@@ -732,6 +732,11 @@ export function GameBoard({
             activePlayers.length > 0 &&
             activePlayers.every((p) => p.secondChance);
 
+          const noValidSwapTargets =
+            selectedCard.value === "swap" &&
+            (activePlayers.filter((p) => p.id !== currentPlayer?.id && p.cards.length > 0).length === 0 ||
+              (currentPlayer?.cards.filter((c) => c.value !== "swap").length ?? 0) === 0);
+
           const cardIcon: Record<string, string> = {
             freeze: "❄️", "flip three": "🎴", "second chance": "💖",
             "flip four": "🃏", "just one more": "➕", steal: "🫴", discard: "🗑️", swap: "🔄",
@@ -756,7 +761,15 @@ export function GameBoard({
                     <p className="text-xs text-gray-400 mt-1">giving to {selectedVictim.name}</p>
                   </div>
                   {ownCards.length === 0 ? (
-                    <p className="text-center text-sm text-gray-400">{t.noCardsAvailable}</p>
+                    <div className="text-center space-y-3">
+                      <p className="text-sm text-gray-400">{t.noCardsAvailable}</p>
+                      <Button
+                        onClick={() => emitPlayCard(selectedVictim, selectedCard)}
+                        className="w-full font-semibold rounded-xl bg-teal-700/50 hover:bg-teal-600/60 border border-teal-500/60"
+                      >
+                        {t.skipCard}
+                      </Button>
+                    </div>
                   ) : (
                     <div className="flex flex-wrap justify-center gap-2 mt-2">
                       {ownCards.map((c, i) => (
@@ -792,7 +805,17 @@ export function GameBoard({
                     <h3 className="text-lg font-bold text-white">{label} <span className="text-purple-300">{selectedVictim.name}</span></h3>
                   </div>
                   {victimCards.length === 0 ? (
-                    <p className="text-center text-sm text-gray-400">{t.noCardsAvailable}</p>
+                    <div className="text-center space-y-3">
+                      <p className="text-sm text-gray-400">{t.noCardsAvailable}</p>
+                      {selectedCard.value === "swap" && (
+                        <Button
+                          onClick={() => emitPlayCard(selectedVictim, selectedCard)}
+                          className="w-full font-semibold rounded-xl bg-teal-700/50 hover:bg-teal-600/60 border border-teal-500/60"
+                        >
+                          {t.skipCard}
+                        </Button>
+                      )}
+                    </div>
                   ) : (
                     <div className="flex flex-wrap justify-center gap-2 mt-2">
                       {victimCards.map((c, i) => (
@@ -833,6 +856,8 @@ export function GameBoard({
                   <h3 className="text-lg font-bold text-white">
                     {allActiveHaveSecondChance ? (
                       <span className="text-pink-300">{t.secondChanceTitle}</span>
+                    ) : noValidSwapTargets ? (
+                      <span className="text-teal-300">🔄 Swap</span>
                     ) : (
                       <>
                         {t.selectTarget}{" "}
@@ -859,6 +884,25 @@ export function GameBoard({
                       )}
                     >
                       {t.discardCard}
+                    </Button>
+                  </div>
+                ) : noValidSwapTargets ? (
+                  <div className="text-center space-y-4">
+                    <p className="text-sm text-teal-200/80 bg-teal-900/30 border border-teal-500/30 rounded-xl px-4 py-3">
+                      {t.noValidSwapTargets}
+                    </p>
+                    <Button
+                      onClick={() => {
+                        const anyActive = gameState.players.find((p) => p.status !== "stop")!;
+                        emitPlayCard(anyActive, selectedCard);
+                      }}
+                      className={cn(
+                        "w-full font-semibold rounded-xl transition-all duration-200",
+                        "bg-teal-700/50 hover:bg-teal-600/60 border border-teal-500/60",
+                        "hover:scale-105 hover:shadow-[0_0_15px_rgba(20,184,166,0.4)]"
+                      )}
+                    >
+                      {t.skipCard}
                     </Button>
                   </div>
                 ) : (

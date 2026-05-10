@@ -128,6 +128,22 @@ describe("handleScoreCards", () => {
     const cards = [modCard("x2"), modCard("+4")];
     expect(handleScoreCards(cards)).toBe(4);
   });
+
+  it("scores lucky 13 as 13 (not NaN)", () => {
+    const cards = [numCard("lucky 13"), numCard("5")];
+    expect(handleScoreCards(cards)).toBe(18);
+  });
+
+  it("scores unlucky 7 as 7 (not NaN)", () => {
+    const cards = [numCard("unlucky 7")];
+    expect(handleScoreCards(cards)).toBe(7);
+  });
+
+  it("lucky 13 with x2 modifier scores correctly", () => {
+    // 13 * 2 + 4 = 30
+    const cards = [numCard("lucky 13"), modCard("x2"), modCard("+4")];
+    expect(handleScoreCards(cards)).toBe(30);
+  });
 });
 
 // ─── handleDrawNumberCard ────────────────────────────────────────────────────
@@ -372,6 +388,42 @@ describe("handlePlaySpecialCard", () => {
 
       handlePlaySpecialCard(game, "p1", specialCard("second chance"));
 
+      expect(game.currentPlayer).toBe(1);
+    });
+  });
+
+  describe("swap", () => {
+    it("swaps cards between attacker and victim", () => {
+      const p0 = makePlayer({ id: "p0", status: "dealing", cards: [numCard("3")] });
+      const p1 = makePlayer({ id: "p1", status: "dealing", cards: [numCard("7")] });
+      const game = makeGame({ players: [p0, p1], currentPlayer: 0, flipCount: 1 });
+
+      handlePlaySpecialCard(game, "p1", specialCard("swap"), numCard("7"), numCard("3"));
+
+      expect(p0.cards.some((c) => c.value === "7")).toBe(true);
+      expect(p1.cards.some((c) => c.value === "3")).toBe(true);
+      expect(game.currentPlayer).toBe(1);
+    });
+
+    it("advances turn when swap has no targetCard (no valid targets)", () => {
+      const p0 = makePlayer({ id: "p0", status: "dealing", cards: [] });
+      const p1 = makePlayer({ id: "p1", status: "dealing", cards: [] });
+      const game = makeGame({ players: [p0, p1], currentPlayer: 0, flipCount: 1 });
+
+      handlePlaySpecialCard(game, "p1", specialCard("swap"));
+
+      expect(game.currentPlayer).toBe(1);
+    });
+
+    it("advances turn when cards not found in hands (no matching cards)", () => {
+      const p0 = makePlayer({ id: "p0", status: "dealing", cards: [numCard("5")] });
+      const p1 = makePlayer({ id: "p1", status: "dealing", cards: [numCard("9")] });
+      const game = makeGame({ players: [p0, p1], currentPlayer: 0, flipCount: 1 });
+
+      handlePlaySpecialCard(game, "p1", specialCard("swap"), numCard("99"), numCard("99"));
+
+      expect(p0.cards[0].value).toBe("5");
+      expect(p1.cards[0].value).toBe("9");
       expect(game.currentPlayer).toBe(1);
     });
   });

@@ -64,7 +64,9 @@ export function handleScoreCards(cards: Card[]): number {
   const numberCards = cards.filter((card) => card.type === "number");
   const modifierCards = cards.filter((card) => card.type === "modifier");
   numberCards.forEach((card) => {
-    score += parseInt(card.value);
+    if (card.value === "lucky 13") score += 13;
+    else if (card.value === "unlucky 7") score += 7;
+    else score += parseInt(card.value);
   });
   // Apply x2 first (doubles number-card total), then ÷2, then additive modifiers
   if (modifierCards.some((card) => card.value === "x2")) {
@@ -282,18 +284,20 @@ export function handlePlaySpecialCard(
     return;
   }
 
-  if (playedCard.value === "swap" && targetCard && sourceCard) {
-    const victimCardIndex = victim.cards.findIndex(
-      (c) => c.value === targetCard.value && c.type === targetCard.type
-    );
-    const attackerCardIndex = currentPlayer.cards.findIndex(
-      (c) => c.value === sourceCard.value && c.type === sourceCard.type
-    );
-    if (victimCardIndex !== -1 && attackerCardIndex !== -1) {
-      const [victimCard] = victim.cards.splice(victimCardIndex, 1);
-      const [attackerCard] = currentPlayer.cards.splice(attackerCardIndex, 1);
-      victim.cards.push(attackerCard);
-      currentPlayer.cards.push(victimCard);
+  if (playedCard.value === "swap") {
+    if (targetCard && sourceCard) {
+      const victimCardIndex = victim.cards.findIndex(
+        (c) => c.value === targetCard.value && c.type === targetCard.type
+      );
+      const attackerCardIndex = currentPlayer.cards.findIndex(
+        (c) => c.value === sourceCard.value && c.type === sourceCard.type
+      );
+      if (victimCardIndex !== -1 && attackerCardIndex !== -1) {
+        const [victimCard] = victim.cards.splice(victimCardIndex, 1);
+        const [attackerCard] = currentPlayer.cards.splice(attackerCardIndex, 1);
+        victim.cards.push(attackerCard);
+        currentPlayer.cards.push(victimCard);
+      }
     }
     if (game.flipCount === 1) {
       game.currentPlayer = getNextPlayerIndex(game);
